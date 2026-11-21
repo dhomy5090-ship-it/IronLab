@@ -1,0 +1,2979 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>قوة • Gym Tracker V1.2</title>
+  <meta name="description" content="تطبيق ويب متكامل لإدارة التمارين الرياضية والإحماء وتتبع التطور في النادي" />
+  <meta name="theme-color" id="meta-theme-color" content="#090B10" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="قوة Gym" />
+  <link rel="manifest" id="pwa-manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22%D9%82%D9%88%D8%A9%20%E2%80%A2%20Gym%20Tracker%20V1.2%22%2C%22short_name%22%3A%22%D9%82%D9%88%D8%A9%20Gym%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23090B10%22%2C%22theme_color%22%3A%22%23090B10%22%2C%22dir%22%3A%22rtl%22%2C%22lang%22%3A%22ar%22%7D" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Tajawal', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            latin: ['Inter', 'Tajawal', 'sans-serif']
+          },
+          colors: {
+            obsidian: '#090B10',
+            surface: '#121620',
+            surfaceHover: '#191F2E',
+            borderDark: '#1F2738',
+            accent: '#10B981',
+            gold: '#F59E0B',
+            electric: '#38BDF8'
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    :root {
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-top: env(safe-area-inset-top, 0px);
+      --bg-app: #F8FAFC;
+      --bg-card: #FFFFFF;
+      --bg-subtle: #F1F5F9;
+      --bg-input: #FFFFFF;
+      --border-main: #E2E8F0;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --glass-header: rgba(255, 255, 255, 0.90);
+      --glass-nav: rgba(255, 255, 255, 0.95);
+    }
+
+    html.dark {
+      color-scheme: dark;
+      --bg-app: #090B10;
+      --bg-card: #121620;
+      --bg-subtle: #0D111A;
+      --bg-input: #0F172A;
+      --border-main: #1F2738;
+      --text-main: #F1F5F9;
+      --text-muted: #94A3B8;
+      --glass-header: rgba(9, 11, 16, 0.86);
+      --glass-nav: rgba(12, 16, 24, 0.95);
+    }
+
+    html:not(.dark) {
+      color-scheme: light;
+    }
+
+    html, body {
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      font-family: 'Tajawal', 'Inter', system-ui, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: none;
+      min-height: 100dvh;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .app-card {
+      background-color: var(--bg-card);
+      border-color: var(--border-main);
+    }
+
+    .app-subtle {
+      background-color: var(--bg-subtle);
+      border-color: var(--border-main);
+    }
+
+    .app-input {
+      background-color: var(--bg-input);
+      border-color: var(--border-main);
+      color: var(--text-main);
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+      font-family: 'Inter', 'Tajawal', sans-serif;
+    }
+
+    .glass-header {
+      background: var(--glass-header);
+      border-color: var(--border-main);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      padding-top: var(--safe-top);
+    }
+
+    .bottom-nav {
+      background: var(--glass-nav);
+      border-color: var(--border-main);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding-bottom: calc(var(--safe-bottom) + 0.35rem);
+    }
+
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #64748B55; border-radius: 999px; }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] { -moz-appearance: textfield; }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.30); }
+      50% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+    }
+    .pulse-today { animation: pulseGlow 2.4s infinite; }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-slide-up { animation: slideUp 0.24s ease-out forwards; }
+  </style>
+</head>
+<body class="selection:bg-emerald-500/30">
+
+  <!-- Top App Bar -->
+  <header class="glass-header sticky top-0 z-40 border-b">
+    <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-2 sm:gap-3">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 shrink-0">
+          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6.5 6.5h11"></path>
+            <path d="M6.5 17.5h11"></path>
+            <path d="M3 10v4"></path>
+            <path d="M21 10v4"></path>
+            <path d="M6 7v10"></path>
+            <path d="M18 7v10"></path>
+            <path d="M6 12h12"></path>
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5 sm:gap-2">
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white truncate">قوة <span class="text-slate-500 dark:text-slate-400 font-semibold text-sm hidden sm:inline">• Gym Tracker</span></h1>
+            <span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 tabular-nums shrink-0">V1.2</span>
+          </div>
+          <p id="header-date-label" class="text-xs text-slate-500 dark:text-slate-400 truncate"></p>
+        </div>
+      </div>
+
+      <!-- Desktop Navigation Pills -->
+      <nav id="desktop-nav" class="hidden md:flex items-center gap-1 app-card border p-1 rounded-xl" aria-label="التنقل الرئيسي">
+        <button data-nav="schedule" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition">
+          <i data-lucide="calendar-days" class="w-4 h-4"></i>
+          <span>الجدول</span>
+        </button>
+        <button data-nav="workout" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition">
+          <i data-lucide="dumbbell" class="w-4 h-4"></i>
+          <span>التمرين</span>
+        </button>
+        <button data-nav="progress" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition">
+          <i data-lucide="trending-up" class="w-4 h-4"></i>
+          <span>التطور</span>
+        </button>
+        <button data-nav="data" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition">
+          <i data-lucide="database" class="w-4 h-4"></i>
+          <span>السجل والنسخ</span>
+        </button>
+      </nav>
+
+      <!-- Header Actions: Theme Toggle + Rest Timer -->
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <button id="btn-theme-toggle" title="تبديل الوضع الليلي / النهاري" class="h-10 px-2.5 sm:px-3 rounded-xl app-card border hover:border-emerald-500/50 flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 transition active:scale-95">
+          <span id="theme-icon-wrap" class="flex items-center justify-center"></span>
+          <span id="theme-label" class="hidden sm:inline">نهاري</span>
+        </button>
+        <button id="btn-open-timer" class="h-10 px-2.5 sm:px-3 rounded-xl app-card border hover:border-sky-500/50 flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 transition active:scale-95">
+          <i data-lucide="timer" class="w-4 h-4 text-sky-500 dark:text-sky-400"></i>
+          <span id="header-timer-text" class="tabular-nums">مؤقت</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-5xl mx-auto px-4 pt-5 pb-36 md:pb-28">
+    <div id="view-onboarding" class="view-section hidden"></div>
+    <div id="view-schedule" class="view-section hidden"></div>
+    <div id="view-workout" class="view-section hidden"></div>
+    <div id="view-progress" class="view-section hidden"></div>
+    <div id="view-data" class="view-section hidden"></div>
+  </main>
+
+  <!-- Floating Rest Timer Bar -->
+  <div id="rest-timer-drawer" class="hidden fixed left-3 right-3 bottom-20 md:bottom-5 md:left-auto md:right-6 md:w-96 z-40 animate-slide-up">
+    <div class="app-card border border-sky-500/50 rounded-2xl p-4 shadow-2xl">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-sky-500 animate-pulse"></span>
+          <span id="timer-title-label" class="text-xs font-bold text-sky-600 dark:text-sky-300">مؤقت الراحة الذكي (Rest Timer)</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button id="timer-sound-toggle" title="تفعيل/كتم الصوت" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 transition">
+            <i data-lucide="volume-2" class="w-4 h-4"></i>
+          </button>
+          <button id="timer-close-btn" title="إغلاق المؤقت" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 transition">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 my-2">
+        <div id="timer-display" class="text-4xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">01:30</div>
+        <div class="flex items-center gap-1.5">
+          <button id="timer-minus-15" class="px-2.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 tabular-nums active:scale-95 transition">-15ث</button>
+          <button id="timer-plus-15" class="px-2.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 tabular-nums active:scale-95 transition">+15ث</button>
+          <button id="timer-play-pause" class="px-3.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white dark:text-slate-950 text-xs font-extrabold flex items-center gap-1 active:scale-95 transition">
+            <i data-lucide="pause" class="w-3.5 h-3.5"></i>
+            <span>إيقاف</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden mb-3">
+        <div id="timer-progress-bar" class="h-full bg-gradient-to-l from-sky-500 to-emerald-500 transition-all duration-300" style="width: 100%"></div>
+      </div>
+
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+        <div class="flex items-center gap-1.5">
+          <button data-preset="60" class="timer-preset-btn px-2.5 py-1 rounded-lg text-xs font-bold tabular-nums transition">60ث</button>
+          <button data-preset="90" class="timer-preset-btn px-2.5 py-1 rounded-lg text-xs font-bold tabular-nums transition">90ث</button>
+          <button data-preset="120" class="timer-preset-btn px-2.5 py-1 rounded-lg text-xs font-bold tabular-nums transition">120ث</button>
+        </div>
+        <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none">
+          <input id="timer-auto-checkbox" type="checkbox" class="w-4 h-4 rounded accent-emerald-500" />
+          <span>بدء تلقائي بعد الجولة</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav id="mobile-nav" class="bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-40 border-t" aria-label="التنقل السفلي">
+    <div class="grid grid-cols-4 gap-1 px-2 pt-1.5">
+      <button data-nav="schedule" class="mobile-nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl transition">
+        <i data-lucide="calendar-days" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[11px] font-bold">الجدول</span>
+      </button>
+      <button data-nav="workout" class="mobile-nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl transition">
+        <i data-lucide="dumbbell" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[11px] font-bold">التمرين</span>
+      </button>
+      <button data-nav="progress" class="mobile-nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl transition">
+        <i data-lucide="trending-up" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[11px] font-bold">التطور</span>
+      </button>
+      <button data-nav="data" class="mobile-nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl transition">
+        <i data-lucide="database" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[11px] font-bold">السجل</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Generic Modal Container -->
+  <div id="modal-overlay" class="hidden fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div id="modal-card" class="w-full sm:max-w-lg app-card border rounded-t-3xl sm:rounded-2xl max-h-[90dvh] flex flex-col overflow-hidden shadow-2xl animate-slide-up">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-borderDark">
+        <h3 id="modal-title" class="text-lg font-extrabold text-slate-900 dark:text-white"></h3>
+        <button id="modal-close" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="modal-body" class="p-5 overflow-y-auto custom-scroll"></div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-20 left-4 right-4 sm:left-auto sm:right-6 sm:w-96 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Hidden File Input for JSON Import -->
+  <input type="file" id="json-import-input" accept=".json,application/json" class="hidden" />
+
+  <script>
+    (function () {
+      'use strict';
+
+      const STORAGE_KEY = 'quwwa_gym_tracker_v1_1_state';
+
+      const MUSCLE_META = {
+        chest:     { label: 'صدر',   en: 'Chest',     bg: 'bg-rose-500/15',    text: 'text-rose-600 dark:text-rose-400',       border: 'border-rose-500/30',    dot: '#F43F5E' },
+        back:      { label: 'ظهر',   en: 'Back',      bg: 'bg-sky-500/15',     text: 'text-sky-600 dark:text-sky-400',         border: 'border-sky-500/30',     dot: '#0EA5E9' },
+        shoulders: { label: 'أكتاف', en: 'Shoulders', bg: 'bg-purple-500/15',  text: 'text-purple-600 dark:text-purple-400',   border: 'border-purple-500/30',  dot: '#A855F7' },
+        legs:      { label: 'أرجل',  en: 'Legs',      bg: 'bg-emerald-500/15', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-500/30', dot: '#10B981' },
+        arms:      { label: 'ذراع',  en: 'Arms',      bg: 'bg-amber-500/15',   text: 'text-amber-700 dark:text-amber-400',     border: 'border-amber-500/30',   dot: '#F59E0B' },
+        abs:       { label: 'بطن',   en: 'Abs',       bg: 'bg-cyan-500/15',    text: 'text-cyan-700 dark:text-cyan-400',       border: 'border-cyan-500/30',    dot: '#06B6D4' }
+      };
+
+      const EQUIPMENT_META = {
+        machine:    { label: 'جهاز (Machine)',   short: 'جهاز',     icon: 'cog',       cls: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30' },
+        cable:      { label: 'كيبل (Cable)',     short: 'كيبل',     icon: 'git-merge', cls: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30' },
+        barbell:    { label: 'بار (Barbell)',    short: 'بار',      icon: 'minus',     cls: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30' },
+        dumbbell:   { label: 'دمبل (Dumbbell)',  short: 'دمبل',     icon: 'dumbbell',  cls: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30' },
+        bodyweight: { label: 'وزن الجسم',        short: 'وزن الجسم', icon: 'user',      cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30' }
+      };
+
+      const EXERCISE_LIBRARY = {
+        chest: {
+          machine: [
+            { name: 'ضغط صدر جهاز (Chest Press Machine)', machine: 'جهاز دفع الصدر (Chest Press)', tips: 'ارتفاع المقعد بمحاذاة منتصف الصدر، ادفع للأمام بتحكم بدون قفل المرفقين.' },
+            { name: 'ضغط صدر علوي جهاز (Incline Chest Press)', machine: 'جهاز دفع صدر علوي (Incline Machine)', tips: 'ثبّت الظهر والأكتاف على المسند وركّز على الصدر العلوي.' },
+            { name: 'تفتيح فراشة جهاز (Pec Deck Fly)', machine: 'جهاز الفراشة (Pec Deck)', tips: 'انحناء بسيط بالمرفقين وثبات ثانية عند عصر الصدر بالمنتصف.' }
+          ],
+          cable: [
+            { name: 'تفتيح صدر كيبل (Cable Chest Fly)', machine: 'جهاز الكيبل المزدوج (Cable Crossover)', tips: 'ميلان بسيط للأمام مع ثبات الجذع وعصر الصدر في نهاية الحركة.' },
+            { name: 'ضغط صدر بالكيبل (Cable Chest Press)', machine: 'جهاز الكيبل (Cable Station)', tips: 'ضع قدماً للأمام للثبات وادفع المقابض للأمام بمستوى الصدر.' },
+            { name: 'تفتيح كيبل سفلي للصدر العلوي (Low-to-High Cable Fly)', machine: 'كيبل سفلي (Low Pulley)', tips: 'اسحب للأعلى والداخل بمحاذاة الذقن لاستهداف الصدر العلوي.' }
+          ],
+          barbell: [
+            { name: 'بنش برس مستوي بار (Flat Barbell Bench Press)', machine: 'البار الحر + بنش مستوي (Barbell Bench)', tips: 'مسكة أوسع قليلاً من الكتف، أنزل البار لمنتصف الصدر ثم ادفع بقوة.' },
+            { name: 'بنش برس علوي بار (Incline Barbell Press)', machine: 'البار الحر + بنش مائل 30°', tips: 'أنزل البار لأعلى الصدر مع ثبات لوحي الكتف للخلف.' },
+            { name: 'بنش برس جهاز سميث (Smith Machine Bench Press)', machine: 'جهاز السميث (Smith Machine)', tips: 'ممتاز للأمان والعزل، اضبط البنش بحيث ينزل البار على خط الصدر.' }
+          ],
+          dumbbell: [
+            { name: 'ضغط صدر علوي دمبل (Incline Dumbbell Press)', machine: 'بنش مائل 30° + دمبل', tips: 'زاوية المقعد الدرجة الثانية، أنزل الدمبل ببطء 3 ثوانٍ.' },
+            { name: 'ضغط صدر مستوي دمبل (Flat Dumbbell Press)', machine: 'بنش مستوي + دمبل', tips: 'توازن كامل بين اليدين مع مدى حركي عميق.' },
+            { name: 'تفتيح صدر دمبل (Dumbbell Fly)', machine: 'بنش مستوي + دمبل', tips: 'افتح الذراعين بزاوية مريحة للكتف بدون مبالغة بالنزول.' }
+          ],
+          bodyweight: [
+            { name: 'متوازي للصدر (Chest Dips)', machine: 'جهاز المتوازي (Dip Station)', tips: 'ميلان بسيط بالجذع للأمام للتركيز على الصدر السفلي.' },
+            { name: 'تمرين الضغط (Push-Ups)', machine: 'وزن الجسم (Bodyweight)', tips: 'جسم مستقيم كاللوح ونزول كامل حتى يقترب الصدر من الأرض.' }
+          ]
+        },
+        back: {
+          machine: [
+            { name: 'سحب علوي جهاز (Lat Pulldown Machine)', machine: 'جهاز السحب العلوي (Lat Pulldown)', tips: 'اسحب بالمرفقين نحو الخصر مع صدر مرتفع.' },
+            { name: 'تجديف صدر مدعوم (Chest-Supported Row)', machine: 'جهاز التجديف المدعوم (Row Machine)', tips: 'ثبّت صدرك على المسند واسحب للخلف لعصر وسط الظهر.' },
+            { name: 'سحب علوي مقلوب (Iso-Lateral High Row)', machine: 'جهاز السحب الجانبي (Hammer Strength)', tips: 'مدى حركي كامل وتوقف ثانية عند العصر.' }
+          ],
+          cable: [
+            { name: 'سحب علوي واسع كيبل (Wide Lat Pulldown)', machine: 'كيبل السحب العلوي (Lat Pulldown Cable)', tips: 'تثبيت الفخذين جيداً وسحب البار لأعلى الصدر.' },
+            { name: 'سحب أرضي جالس كيبل (Seated Cable Row)', machine: 'جهاز السحب الأرضي (Seated Row Cable)', tips: 'ظهر مستقيم تماماً، اسحب نحو البطن واعصر لوحي الكتف.' },
+            { name: 'بول أوفر كيبل بذراع مستقيمة (Straight-Arm Pulldown)', machine: 'كيبل علوي (High Pulley)', tips: 'مرفقان شبه مستقيمين واسحب باتجاه الفخذين لعزل المجنص.' }
+          ],
+          barbell: [
+            { name: 'تجديف بالبار (Barbell Bent-Over Row)', machine: 'البار الحر (Barbell)', tips: 'ظهر مستقيم بزاوية 45° واسحب البار نحو أسفل البطن.' },
+            { name: 'تي بار رو (T-Bar Row)', machine: 'جهاز التي بار (T-Bar)', tips: 'ثبات أسفل الظهر وسحب كامل لزيادة سمك الظهر.' },
+            { name: 'ديدلفت تقليدي (Conventional Deadlift)', machine: 'البار الحر (Barbell)', tips: 'البار ملاصق للساقين وادفع الأرض بقدميك مع شد البطن.' }
+          ],
+          dumbbell: [
+            { name: 'منشار دمبل يد واحدة (Single-Arm DB Row)', machine: 'بنش + دمبل', tips: 'اسحب الدمبل باتجاه الورك وليس الكتف لتفعيل المجنص.' },
+            { name: 'تجديف دمبل على بنش مائل (Incline DB Row)', machine: 'بنش مائل + دمبل', tips: 'عزل تام للظهر بدون أي ضغط على أسفل الظهر.' }
+          ],
+          bodyweight: [
+            { name: 'عقلة (Pull-Ups)', machine: 'بار العقلة (Pull-up Bar)', tips: 'تمدد كامل بالأسفل وصعود حتى يتجاوز الذقن البار.' },
+            { name: 'عقلة بمساعدة الجهاز (Assisted Pull-Ups)', machine: 'جهاز العقلة المساعد', tips: 'تحكم بطيء في النزول لبناء القوة.' }
+          ]
+        },
+        shoulders: {
+          machine: [
+            { name: 'ضغط أكتاف جهاز (Shoulder Press Machine)', machine: 'جهاز ضغط الأكتاف (Shoulder Press)', tips: 'المقعد مناسب بحيث تكون المقابض بمستوى الأذن.' },
+            { name: 'رفرفة جانبي جهاز (Lateral Raise Machine)', machine: 'جهاز الرفرفة الجانبية', tips: 'ارفع بالمرفقين لمستوى الكتف مع ثبات الجذع.' },
+            { name: 'كتف خلفي فراشة عكسي (Reverse Pec Deck)', machine: 'جهاز الفراشة العكسي (Rear Delt Machine)', tips: 'ادفع للخلف بمدى متحكم به بدون ضم لوحي الكتف بقوة.' }
+          ],
+          cable: [
+            { name: 'رفرفة جانبي كيبل (Cable Lateral Raise)', machine: 'جهاز الكيبل (Cable Station)', tips: 'البكرة بمستوى المعصم، شد مستمر على الكتف الجانبي.' },
+            { name: 'سحب للوجه كيبل (Face Pull)', machine: 'كيبل حبل (Cable Rope)', tips: 'اسحب باتجاه الجبهة مع تدوير خارجي للكتف.' },
+            { name: 'رفرفة أمامي كيبل (Cable Front Raise)', machine: 'كيبل سفلي (Low Pulley)', tips: 'رفع متحكم به لمستوى الكتف بدون أرجحة.' }
+          ],
+          barbell: [
+            { name: 'ضغط أكتاف عسكري بار (Overhead Barbell Press)', machine: 'البار الحر (Barbell)', tips: 'شد البطن والمؤخرة لحماية أسفل الظهر أثناء الدفع.' },
+            { name: 'ضغط أكتاف سميث (Smith Machine Shoulder Press)', machine: 'جهاز السميث (Smith Machine)', tips: 'نزول حتى مستوى الذقن ودفع للأعلى بسلاسة.' }
+          ],
+          dumbbell: [
+            { name: 'ضغط أكتاف دمبل جالس (Seated DB Shoulder Press)', machine: 'بنش قائم + دمبل', tips: 'المرفقان للأمام قليلاً بزاوية 30° لحماية المفصل.' },
+            { name: 'رفرفة جانبي دمبل (Dumbbell Lateral Raise)', machine: 'دمبل (Dumbbells)', tips: 'انحناء خفيف للأمام وارفع ببطء لمستوى الكتف.' }
+          ],
+          bodyweight: [
+            { name: 'ضغط بايك للأكتاف (Pike Push-Ups)', machine: 'وزن الجسم', tips: 'ارفع الورك عالياً وأنزل الرأس للأمام بين اليدين.' }
+          ]
+        },
+        legs: {
+          machine: [
+            { name: 'دفع أرجل (Leg Press 45°)', machine: 'جهاز دفع الأرجل (Leg Press Machine)', tips: 'القدمان بمنتصف اللوح ولا تغلق الركبتين بالكامل.' },
+            { name: 'هاك سكوات (Hack Squat)', machine: 'جهاز الهاك سكوات (Hack Squat Machine)', tips: 'نزول عميق متحكم به مع إبقاء الظهر ملاصقاً للمسند.' },
+            { name: 'رفرفة أمامي (Leg Extension)', machine: 'جهاز الرفرفة الأمامي (Leg Extension)', tips: 'ثبات ثانية بالأعلى لعصر الفخذ الأمامي.' },
+            { name: 'خلفيات أرجل جالس (Seated Leg Curl)', machine: 'جهاز الخلفيات الجالس (Seated Leg Curl)', tips: 'اضغط وسادة الفخذ بإحكام لمنع ارتفاع الحوض.' },
+            { name: 'بطات واقف جهاز (Standing Calf Raise)', machine: 'جهاز البطات (Calf Raise Machine)', tips: 'توقف ثانيتين بالأسفل لتمدد كامل ثم صعود قوي.' }
+          ],
+          cable: [
+            { name: 'سحب بين الساقين (Cable Pull-Through)', machine: 'كيبل سفلي حبل (Low Cable Rope)', tips: 'ادفع الورك للخلف ثم للأمام لتفعيل الخلفيات والأرداف.' },
+            { name: 'رفسة خلفية كيبل (Cable Glute Kickback)', machine: 'كيبل سفلي + رباط كاحل', tips: 'حركة مركزة بدون تقويس أسفل الظهر.' }
+          ],
+          barbell: [
+            { name: 'سكوات بار حر (Barbell Back Squat)', machine: 'البار الحر + راك السكوات', tips: 'صدر مرتفع ونزول حتى توازي الفخذين للأرض.' },
+            { name: 'ديدلفت روماني بار (Barbell Romanian Deadlift)', machine: 'البار الحر (Barbell)', tips: 'ادفع الورك للخلف والبار ملاصق للساقين.' },
+            { name: 'هيب ثرست بار (Barbell Hip Thrust)', machine: 'البار الحر + بنش', tips: 'ثبات ثانية بالأعلى مع عصر الأرداف.' }
+          ],
+          dumbbell: [
+            { name: 'سكوات بلغاري دمبل (Bulgarian Split Squat)', machine: 'بنش + دمبل', tips: 'خطوة متوازنة ونزول عميق بالركبة الخلفية.' },
+            { name: 'لانجز مشي دمبل (Walking DB Lunges)', machine: 'دمبل (Dumbbells)', tips: 'جذع مستقيم ودفع بكعب القدم الأمامية.' }
+          ],
+          bodyweight: [
+            { name: 'سكوات وزن الجسم (Bodyweight Squats)', machine: 'وزن الجسم', tips: 'إيقاع بطيء ومدى حركي كامل.' }
+          ]
+        },
+        arms: {
+          machine: [
+            { name: 'بايسبس ارتكاز جهاز (Preacher Curl Machine)', machine: 'جهاز البايسبس (Preacher Machine)', tips: 'ثبّت الإبطين على الوسادة ومدّ الذراع بتحكم.' },
+            { name: 'ترايسبس دفع جالس جهاز (Seated Dip Machine)', machine: 'جهاز الترايسبس (Dip Machine)', tips: 'ثبّت الظهر وادفع للأسفل حتى امتداد الذراع.' }
+          ],
+          cable: [
+            { name: 'ترايسبس حبل كيبل (Triceps Rope Pushdown)', machine: 'كيبل علوي حبل (Cable High Pulley)', tips: 'ثبّت المرفقين بجانب الجسم وافتح الحبل بأسفل الحركة.' },
+            { name: 'ترايسبس علوي كيبل (Overhead Cable Extension)', machine: 'كيبل حبل (Cable Rope)', tips: 'تمدد كامل للرأس الطويل من الترايسبس.' },
+            { name: 'بايسبس كيبل سفلي (Cable Bicep Curl)', machine: 'كيبل سفلي (Low Pulley)', tips: 'شد مستمر على البايسبس في كل الزوايا.' }
+          ],
+          barbell: [
+            { name: 'بايسبس بار متعرج (EZ-Bar Curl)', machine: 'البار المتعرج (EZ-Bar)', tips: 'بدون أرجحة ظهر، تحكم كامل في النزول لمدة ثانيتين.' },
+            { name: 'ترايسبس نائم بار متعرج (Skull Crushers)', machine: 'البار المتعرج + بنش مستوي', tips: 'أنزل البار خلف الجبهة قليلاً ثم ادفع للأعلى.' }
+          ],
+          dumbbell: [
+            { name: 'هامر كيرل دمبل (Hammer Curl)', machine: 'دمبل (Dumbbells)', tips: 'قبضة محايدة لاستهداف الساعد والرأس الجانبي.' },
+            { name: 'بايسبس دمبل جالس مائل (Incline DB Curl)', machine: 'بنش مائل 45° + دمبل', tips: 'تمدد عميق لعضلة البايسبس وثبات المرفقين.' }
+          ],
+          bodyweight: [
+            { name: 'متوازي للترايسبس (Triceps Dips)', machine: 'جهاز المتوازي', tips: 'جسم مستقيم عمودياً للتركيز على الترايسبس.' }
+          ]
+        },
+        abs: {
+          machine: [
+            { name: 'بطن جهاز جالس (Ab Crunch Machine)', machine: 'جهاز البطن (Ab Crunch Machine)', tips: 'اثنِ الجذع للأسفل بزفير كامل مع ثبات الساقين.' }
+          ],
+          cable: [
+            { name: 'بطن كيبل حبل (Cable Crunch)', machine: 'كيبل علوي حبل (Cable Rope)', tips: 'ثبات الورك وثني العمود الفقري للأسفل.' },
+            { name: 'لف جذع كيبل للخواصر (Cable Woodchopper)', machine: 'جهاز الكيبل (Cable Station)', tips: 'تدوير متحكم به من الجذع وليس الذراعين فقط.' }
+          ],
+          barbell: [
+            { name: 'عجلة البطن / بار رول أوت (Barbell Rollout)', machine: 'بار أو عجلة البطن', tips: 'شد البطن طوال الحركة ومنع تقوس أسفل الظهر.' }
+          ],
+          dumbbell: [
+            { name: 'انحناء جانبي دمبل (DB Side Bend)', machine: 'دمبل (Dumbbell)', tips: 'حركة جانبية نظيفة للتركيز على الخواصر.' }
+          ],
+          bodyweight: [
+            { name: 'رفع أرجل معلق (Hanging Leg Raise)', machine: 'بار العقلة / جهاز البطن', tips: 'ارفع الحوض قليلاً بالأعلى لتفعيل البطن السفلي.' },
+            { name: 'بلانك (Plank)', machine: 'وزن الجسم', tips: 'شد البطن والأرداف مع استقامة الجسم تماماً.' }
+          ]
+        }
+      };
+
+      function inferEquipment(ex) {
+        if (ex && ex.equipment && EQUIPMENT_META[ex.equipment]) return ex.equipment;
+        const txt = ((ex && ex.machine) || '' + ' ' + ((ex && ex.name) || '')).toLowerCase();
+        if (txt.includes('cable') || txt.includes('كيبل') || txt.includes('حبل') || txt.includes('pulley')) return 'cable';
+        if (txt.includes('barbell') || txt.includes('ez-bar') || txt.includes('بار') || txt.includes('smith') || txt.includes('سميث')) return 'barbell';
+        if (txt.includes('dumbbell') || txt.includes('دمبل') || txt.includes(' db ')) return 'dumbbell';
+        if (txt.includes('bodyweight') || txt.includes('وزن الجسم') || txt.includes('عقلة') || txt.includes('بلانك')) return 'bodyweight';
+        return 'machine';
+      }
+
+      const RECOVERY_TIPS = [
+        { title: 'النوم العميق (7–9 ساعات)', desc: 'معظم عمليات البناء والاستشفاء العضلي وإفراز هرمون النمو تحدث أثناء النوم العميق.', icon: 'moon' },
+        { title: 'تغطية احتياج البروتين والماء', desc: 'حافظ على نفس كمية البروتين في يوم الراحة (1.6–2.2 جم/كجم) واشرب 3 لترات ماء على الأقل.', icon: 'droplets' },
+        { title: 'استشفاء نشط (Active Recovery)', desc: 'مشي خفيف 20–30 دقيقة أو إطالات حركية بسيطة لتحسين تدفق الدم وتقليل الشد العضلي.', icon: 'footprints' },
+        { title: 'تحضير جدول الغد', desc: 'راجع أوزانك السابقة وحدد التمرين الذي ستسعى لكسر رقمك القياسي فيه غداً.', icon: 'target' }
+      ];
+
+      const WARMUP_PRESETS = [
+        { id: 'wu_treadmill', name: 'مشي سريع / مائل على السير (Treadmill)', durationMin: 7, details: 'سرعة 5–6 كم/س • ميلان 4–6% لرفع نبض القلب', icon: 'footprints' },
+        { id: 'wu_bike', name: 'الدراجة الثابتة (Stationary Bike)', durationMin: 6, details: 'مقاومة خفيفة إلى متوسطة لتسخين المفاصل والدم', icon: 'bike' },
+        { id: 'wu_elliptical', name: 'جهاز الأوربتراك (Elliptical)', durationMin: 6, details: 'تسخين شامل للجزء العلوي والسفلي معاً', icon: 'activity' },
+        { id: 'wu_upper_mob', name: 'إطالات حركية للأكتاف والكفة المدورة', durationMin: 3, details: 'تدوير أكتاف، سحب مطاط خفيف، فتح الصدر', icon: 'flame' },
+        { id: 'wu_lower_mob', name: 'إطالات حركية للحوض والركبتين', durationMin: 4, details: 'مرجحة ساقين، سكوات وزن الجسم 15 تكراراً', icon: 'flame' },
+        { id: 'wu_light_sets', name: 'جولتا إحماء بوزن خفيف (Feeder Sets)', durationMin: 3, details: '50% من وزن التمرين الأول × 12 تكراراً للتهيئة العصبية', icon: 'dumbbell' }
+      ];
+
+      const DAYS_ORDER = [
+        { id: 'sat', jsDay: 6, ar: 'السبت',   short: 'سبت' },
+        { id: 'sun', jsDay: 0, ar: 'الأحد',   short: 'أحد' },
+        { id: 'mon', jsDay: 1, ar: 'الإثنين', short: 'إثنين' },
+        { id: 'tue', jsDay: 2, ar: 'الثلاثاء', short: 'ثلاثاء' },
+        { id: 'wed', jsDay: 3, ar: 'الأربعاء', short: 'أربعاء' },
+        { id: 'thu', jsDay: 4, ar: 'الخميس',  short: 'خميس' },
+        { id: 'fri', jsDay: 5, ar: 'الجمعة',  short: 'جمعة' }
+      ];
+
+      const PROGRAM_TEMPLATES = [
+        {
+          id: 'ppl',
+          name: 'Push / Pull / Legs (دفع • سحب • أرجل)',
+          badge: 'الأكثر شيوعاً • 5 أيام',
+          desc: 'توزيع علمي ممتاز: دفع (صدر وأكتاف وتراي)، سحب (ظهر وباي)، أرجل، ثم علوي وسفلي مع يومي راحة.',
+          icon: 'flame'
+        },
+        {
+          id: 'bro_split',
+          name: 'عضلة يومياً (Bro Split)',
+          badge: 'تركيز عالٍ • 5 أيام',
+          desc: 'كل يوم مخصص لعضلة واحدة بتركيز كامل: السبت صدر، الأحد ظهر، الإثنين أكتاف، الأربعاء ذراع، الخميس أرجل.',
+          icon: 'award'
+        },
+        {
+          id: 'upper_lower',
+          name: 'علوي / سفلي (Upper / Lower)',
+          badge: 'متوازن • 4 أيام',
+          desc: 'تمرين الجزء العلوي مرتين والسفلي مرتين أسبوعياً مع 3 أيام راحة لاستشفاء ممتاز.',
+          icon: 'layers'
+        },
+        {
+          id: 'full_body',
+          name: 'جسم كامل (Full Body)',
+          badge: 'للمبتدئين أو المشغولين • 3 أيام',
+          desc: '3 جلسات أسبوعياً (السبت، الإثنين، الأربعاء) تشمل أهم التمارين المركبة للجسم بالكامل.',
+          icon: 'zap'
+        },
+        {
+          id: 'custom_blank',
+          name: 'جدول فارغ — ابدأ من الصفر',
+          badge: 'تخصيص 100%',
+          desc: 'أيام الأسبوع جاهزة وفارغة لتبني جدولك وأجهزتك وإحماءك بنفسك خطوة بخطوة.',
+          icon: 'sliders'
+        }
+      ];
+
+      function buildDefaultWarmups(focus, cardioChoice) {
+        const cardio = cardioChoice === 'bike'
+          ? { id: 'wu_c_' + Math.random().toString(36).slice(2, 7), name: 'الدراجة الثابتة (Stationary Bike)', durationMin: 6, details: 'مقاومة خفيفة إلى متوسطة لرفع نبض القلب' }
+          : cardioChoice === 'elliptical'
+            ? { id: 'wu_c_' + Math.random().toString(36).slice(2, 7), name: 'جهاز الأوربتراك (Elliptical)', durationMin: 6, details: 'إيقاع ثابت لتنشيط الدورة الدموية' }
+            : { id: 'wu_c_' + Math.random().toString(36).slice(2, 7), name: 'مشي مائل على السير (Treadmill)', durationMin: 7, details: 'سرعة 5.5 كم/س • ميلان 5% لتسخين الجسم' };
+
+        const mob = focus === 'lower'
+          ? { id: 'wu_m_' + Math.random().toString(36).slice(2, 7), name: 'إطالات حركية للحوض والركبتين (Dynamic Mobility)', durationMin: 4, details: 'مرجحة ساقين + 15 سكوات بوزن الجسم' }
+          : { id: 'wu_m_' + Math.random().toString(36).slice(2, 7), name: 'تسخين مفاصل الكتف والكفة المدورة', durationMin: 3, details: 'تدوير أكتاف + سحب مطاط خفيف لتجنب الإصابات' };
+
+        const feeder = { id: 'wu_f_' + Math.random().toString(36).slice(2, 7), name: 'جولتا إحماء بوزن خفيف قبل أول تمرين', durationMin: 3, details: '50% من الوزن الفعلي × 12 تكراراً بتحكم بطيء' };
+        return [cardio, mob, feeder];
+      }
+
+      function buildScheduleFromTemplate(templateId, cardioChoice) {
+        const restDay = (dayId) => ({
+          dayId,
+          type: 'rest',
+          title: 'يوم راحة واستشفاء (Rest Day)',
+          subtitle: 'استرخاء وتغذية جيدة وبناء عضلي',
+          warmups: [],
+          exercises: []
+        });
+
+        if (templateId === 'bro_split') {
+          return [
+            {
+              dayId: 'sat', type: 'workout', title: 'صدر (Chest Day)', subtitle: 'تركيز كامل على زوايا الصدر',
+              warmups: buildDefaultWarmups('upper', cardioChoice),
+              exercises: [
+                { id: 'ex_incline_db', name: 'ضغط صدر علوي دمبل (Incline DB Press)', machine: 'بنش مائل 30° + دمبل', muscle: 'chest', sets: 4, repRange: '8-10', tips: 'زاوية المقعد الدرجة الثانية، أنزل الدمبل ببطء مع ثبات الأكتاف.' },
+                { id: 'ex_chest_press', name: 'ضغط صدر جهاز (Chest Press Machine)', machine: 'Chest Press', muscle: 'chest', sets: 4, repRange: '10-12', tips: 'المقعد بمحاذاة منتصف الصدر.' },
+                { id: 'ex_pec_deck', name: 'تفتيح فراشة (Pec Deck Fly)', machine: 'Pec Deck Machine', muscle: 'chest', sets: 3, repRange: '12-15', tips: 'ثبات ثانية في المنتصف لعصر ألياف الصدر.' }
+              ]
+            },
+            {
+              dayId: 'sun', type: 'workout', title: 'ظهر (Back Day)', subtitle: 'عرض الظهر والسمك العضلي',
+              warmups: buildDefaultWarmups('upper', cardioChoice),
+              exercises: [
+                { id: 'ex_lat_pulldown', name: 'سحب علوي واسع (Lat Pulldown)', machine: 'Lat Pulldown Machine', muscle: 'back', sets: 4, repRange: '8-12', tips: 'اسحب بالمرفقين للأسفل مع صدر مرتفع.' },
+                { id: 'ex_seated_row', name: 'سحب أرضي جالس (Seated Cable Row)', machine: 'Seated Row Cable', muscle: 'back', sets: 4, repRange: '10-12', tips: 'ظهر مستقيم وتوقف ثانية عند العصر.' },
+                { id: 'ex_tbar_row', name: 'تجديف صدر مدعوم (Chest-Supported Row)', machine: 'Row Machine', muscle: 'back', sets: 3, repRange: '10-12', tips: 'سحب كامل للخلف بدون تحريك أسفل الظهر.' }
+              ]
+            },
+            {
+              dayId: 'mon', type: 'workout', title: 'أكتاف وبطن (Shoulders & Abs)', subtitle: 'الأكتاف الأمامية والجانبية والخلفية',
+              warmups: buildDefaultWarmups('upper', cardioChoice),
+              exercises: [
+                { id: 'ex_shoulder_press', name: 'ضغط أكتاف جهاز (Shoulder Press)', machine: 'Shoulder Press Machine', muscle: 'shoulders', sets: 4, repRange: '8-10', tips: 'المرفقان بزاوية 30 درجة للأمام لحماية الكتف.' },
+                { id: 'ex_lat_raise', name: 'رفرفة جانبي كيبل (Cable Lateral Raise)', machine: 'Cable Station', muscle: 'shoulders', sets: 4, repRange: '12-15', tips: 'بدون أرجحة، تركيز على الكتف الجانبي.' },
+                { id: 'ex_face_pull', name: 'سحب للوجه (Face Pull)', machine: 'Cable Rope', muscle: 'shoulders', sets: 3, repRange: '15-18', tips: 'تدوير خارجي للكتف في نهاية الحركة.' },
+                { id: 'ex_cable_crunch', name: 'بطن كيبل (Cable Crunch)', machine: 'Cable Rope', muscle: 'abs', sets: 3, repRange: '12-15', tips: 'ثبات الورك وثني العمود الفقري للأسفل.' }
+              ]
+            },
+            restDay('tue'),
+            {
+              dayId: 'wed', type: 'workout', title: 'ذراع (Biceps & Triceps)', subtitle: 'تضخيم البايسبس والترايسبس',
+              warmups: buildDefaultWarmups('upper', cardioChoice),
+              exercises: [
+                { id: 'ex_bicep_curl', name: 'بايسبس بار متعرج (EZ-Bar Curl)', machine: 'EZ-Bar', muscle: 'arms', sets: 4, repRange: '10-12', tips: 'تحكم كامل في النزول لمدة ثانيتين.' },
+                { id: 'ex_hammer_curl', name: 'هامر كيرل دمبل (Hammer Curl)', machine: 'Dumbbells', muscle: 'arms', sets: 3, repRange: '10-12', tips: 'قبضة محايدة بدون أرجحة.' },
+                { id: 'ex_tricep_push', name: 'ترايسبس حبل (Triceps Rope Pushdown)', machine: 'Cable High Pulley', muscle: 'arms', sets: 4, repRange: '10-12', tips: 'افتح الحبل بأسفل الحركة لعصر التراي.' },
+                { id: 'ex_overhead_tri', name: 'ترايسبس علوي كيبل (Overhead Cable Ext)', machine: 'Cable Rope', muscle: 'arms', sets: 3, repRange: '12-15', tips: 'تمدد كامل للرأس الطويل من الترايسبس.' }
+              ]
+            },
+            {
+              dayId: 'thu', type: 'workout', title: 'أرجل (Legs Day)', subtitle: 'أماميات وخلفيات وبطات',
+              warmups: buildDefaultWarmups('lower', cardioChoice),
+              exercises: [
+                { id: 'ex_leg_press', name: 'دفع أرجل (Leg Press 45°)', machine: 'Leg Press Machine', muscle: 'legs', sets: 4, repRange: '10-12', tips: 'لا تغلق الركبتين بالكامل في الأعلى.' },
+                { id: 'ex_rdl', name: 'ديدلفت روماني (Romanian Deadlift)', machine: 'Barbell / Smith', muscle: 'legs', sets: 3, repRange: '8-10', tips: 'ادفع الورك للخلف مع ظهر مستقيم.' },
+                { id: 'ex_leg_ext', name: 'رفرفة أمامي (Leg Extension)', machine: 'Leg Extension Machine', muscle: 'legs', sets: 3, repRange: '12-15', tips: 'ثبات ثانية في القمة.' },
+                { id: 'ex_leg_curl', name: 'خلفيات أرجل جالس (Seated Leg Curl)', machine: 'Seated Leg Curl', muscle: 'legs', sets: 3, repRange: '10-12', tips: 'تثبيت وسادة الفخذ جيداً.' }
+              ]
+            },
+            restDay('fri')
+          ];
+        }
+
+        if (templateId === 'upper_lower') {
+          return [
+            {
+              dayId: 'sat', type: 'workout', title: 'Upper A • علوي (قوة)', subtitle: 'صدر وظهر وأكتاف وذراع',
+              warmups: buildDefaultWarmups('upper', cardioChoice),
+              exercises: [
+                { id: 'ex_incline_db', name: 'ضغط صدر علوي دمبل (Incline DB Press)', machine: 'بنش مائل 30°', muscle: 'chest', sets: 4, repRange: '8-10', tips: 'نزول متحكم به 3 ثوانٍ.' },
+                { id: 'ex_lat_pulldown', name: 'سحب علوي واسع (Lat Pulldown)', machine: 'Lat Pulldown', muscle: 'back', sets: 4, repRange: '8-10', tips: 'اسحب بالمرفقين نحو الخصر.' },
+                { id: 'ex_shoulder_press', name: 'ضغط أكتاف جهاز (Shoulder Press)', machine: 'Shoulder Press', muscle: 'shoulders', sets: 3, repRange: '10-12', tips: 'ثبات الظهر على المسند.' },
+                { id: 'ex_tricep_push', name: 'ترايسبس حبل (Triceps Rope Pushdown)', machine: 'Cable', muscle: 'arms', sets: 3, repRange: '10-12', tips: 'ثبّت المرفقين بجانب الجسم.' }
+              ]
+            },
+            {
+              dayId: 'sun', type: 'workout', title: 'Lower A • سفلي (أماميات)', subtitle: 'تركيز على الفخذ الأمامي والبطن',
+              warmups: buildDefaultWarmups('lower', cardioChoice),
+              exercises: [
+                { id: 'ex_leg_press', name: 'دفع أرجل (Leg Press 45°)', machine: 'Leg Press', muscle: 'legs', sets: 4, repRange: '10-12', tips: 'القدمان بمنتصف اللوح.' },
+                { id: 'ex_leg_curl', name: 'خلفيات أرجل جالس (Seated Leg Curl)', machine: 'Seated Leg Curl', muscle: 'legs', sets: 3, repRange: '10-12', tips: 'تمدد وعصر كامل.' },
+                { id: 'ex_leg_ext', name: 'رفرفة أمامي (Leg Extension)', machine: 'Leg Extension', muscle: 'legs', sets: 3, repRange: '12-15', tips: 'تحكم بطيء بالنزول.' },
+                { id: 'ex_cable_crunch', name: 'بطن كيبل (Cable Crunch)', machine: 'Cable Rope', muscle: 'abs', sets: 3, repRange: '12-15', tips: 'تنفس منتظم مع انقباض البطن.' }
+              ]
+            },
+            restDay('mon'),
+            {
+              dayId: 'tue', type: 'workout', title: 'Upper B • علوي (تضخيم)', subtitle: 'أجهزة وكيبل بتركيز عضلي',
+              warmups: buildDefaultWarmups('upper', cardioChoice),
+              exercises: [
+                { id: 'ex_chest_press', name: 'ضغط صدر جهاز (Chest Press Machine)', machine: 'Chest Press', muscle: 'chest', sets: 4, repRange: '10-12', tips: 'ارتفاع المقعد بمحاذاة منتصف الصدر.' },
+                { id: 'ex_seated_row', name: 'سحب أرضي جالس (Seated Cable Row)', machine: 'Seated Row', muscle: 'back', sets: 4, repRange: '10-12', tips: 'عصر لوحي الكتف في نهاية السحب.' },
+                { id: 'ex_lat_raise', name: 'رفرفة جانبي كيبل (Cable Lateral Raise)', machine: 'Cable', muscle: 'shoulders', sets: 4, repRange: '12-15', tips: 'البكرة بمستوى المعصم.' },
+                { id: 'ex_bicep_curl', name: 'بايسبس بار متعرج (EZ-Bar Curl)', machine: 'EZ-Bar', muscle: 'arms', sets: 3, repRange: '10-12', tips: 'بدون أرجحة ظهر.' }
+              ]
+            },
+            restDay('wed'),
+            {
+              dayId: 'thu', type: 'workout', title: 'Lower B • سفلي (خلفيات)', subtitle: 'تركيز على الخلفيات والبطات',
+              warmups: buildDefaultWarmups('lower', cardioChoice),
+              exercises: [
+                { id: 'ex_rdl', name: 'ديدلفت روماني (Romanian Deadlift)', machine: 'Barbell / Smith', muscle: 'legs', sets: 4, repRange: '8-10', tips: 'دفع الورك للخلف والبار قريب من الساق.' },
+                { id: 'ex_hack_squat', name: 'هاك سكوات (Hack Squat)', machine: 'Hack Squat', muscle: 'legs', sets: 3, repRange: '8-10', tips: 'نزول عميق مع إبقاء الظهر ملاصقاً.' },
+                { id: 'ex_calf_raise', name: 'بطات واقف (Standing Calf Raise)', machine: 'Calf Raise', muscle: 'legs', sets: 4, repRange: '12-15', tips: 'توقف ثانيتين بالأسفل لتمدد كامل.' }
+              ]
+            },
+            restDay('fri')
+          ];
+        }
+
+        if (templateId === 'full_body') {
+          return [
+            {
+              dayId: 'sat', type: 'workout', title: 'Full Body A • جسم كامل', subtitle: 'تمارين مركبة شاملة',
+              warmups: buildDefaultWarmups('lower', cardioChoice),
+              exercises: [
+                { id: 'ex_leg_press', name: 'دفع أرجل (Leg Press 45°)', machine: 'Leg Press', muscle: 'legs', sets: 3, repRange: '10-12', tips: 'نزول متحكم به بدون قفل الركبة.' },
+                { id: 'ex_chest_press', name: 'ضغط صدر جهاز (Chest Press)', machine: 'Chest Press', muscle: 'chest', sets: 3, repRange: '8-12', tips: 'ثبات الأكتاف للخلف.' },
+                { id: 'ex_lat_pulldown', name: 'سحب علوي واسع (Lat Pulldown)', machine: 'Lat Pulldown', muscle: 'back', sets: 3, repRange: '10-12', tips: 'سحب لأعلى الصدر.' },
+                { id: 'ex_lat_raise', name: 'رفرفة جانبي كيبل (Lateral Raise)', machine: 'Cable', muscle: 'shoulders', sets: 3, repRange: '12-15', tips: 'تركيز على الكتف الجانبي.' }
+              ]
+            },
+            restDay('sun'),
+            {
+              dayId: 'mon', type: 'workout', title: 'Full Body B • جسم كامل', subtitle: 'توازن بين السحب والدفع والسفلي',
+              warmups: buildDefaultWarmups('upper', cardioChoice),
+              exercises: [
+                { id: 'ex_rdl', name: 'ديدلفت روماني (Romanian Deadlift)', machine: 'Barbell / Smith', muscle: 'legs', sets: 3, repRange: '8-10', tips: 'ظهر مستقيم ودفع الورك للخلف.' },
+                { id: 'ex_incline_db', name: 'ضغط صدر علوي دمبل (Incline DB Press)', machine: 'بنش مائل', muscle: 'chest', sets: 3, repRange: '8-10', tips: 'زاوية 30 درجة.' },
+                { id: 'ex_seated_row', name: 'سحب أرضي جالس (Seated Row)', machine: 'Cable Row', muscle: 'back', sets: 3, repRange: '10-12', tips: 'عصر لوحي الكتف.' },
+                { id: 'ex_bicep_curl', name: 'بايسبس بار متعرج (EZ-Bar Curl)', machine: 'EZ-Bar', muscle: 'arms', sets: 3, repRange: '10-12', tips: 'بدون أرجحة.' }
+              ]
+            },
+            restDay('tue'),
+            {
+              dayId: 'wed', type: 'workout', title: 'Full Body C • جسم كامل', subtitle: 'ختام الأسبوع بتركيز عالٍ',
+              warmups: buildDefaultWarmups('lower', cardioChoice),
+              exercises: [
+                { id: 'ex_hack_squat', name: 'هاك سكوات (Hack Squat)', machine: 'Hack Squat', muscle: 'legs', sets: 3, repRange: '8-10', tips: 'نزول عميق ومتحكم.' },
+                { id: 'ex_shoulder_press', name: 'ضغط أكتاف جهاز (Shoulder Press)', machine: 'Shoulder Press', muscle: 'shoulders', sets: 3, repRange: '10-12', tips: 'ثبات الظهر.' },
+                { id: 'ex_tricep_push', name: 'ترايسبس حبل (Triceps Pushdown)', machine: 'Cable', muscle: 'arms', sets: 3, repRange: '10-12', tips: 'تثبيت المرفقين.' },
+                { id: 'ex_cable_crunch', name: 'بطن كيبل (Cable Crunch)', machine: 'Cable Rope', muscle: 'abs', sets: 3, repRange: '12-15', tips: 'انقباض كامل للبطن.' }
+              ]
+            },
+            restDay('thu'),
+            restDay('fri')
+          ];
+        }
+
+        if (templateId === 'custom_blank') {
+          return DAYS_ORDER.map(d => ({
+            dayId: d.id,
+            type: d.id === 'fri' ? 'rest' : 'workout',
+            title: d.id === 'fri' ? 'يوم راحة واستشفاء (Rest Day)' : `تمرين يوم ${d.ar}`,
+            subtitle: d.id === 'fri' ? 'استرخاء واستشفاء عضلي' : 'اضغط إضافة تمرين لبناء هذا اليوم',
+            warmups: d.id === 'fri' ? [] : buildDefaultWarmups('upper', cardioChoice).slice(0, 2),
+            exercises: []
+          }));
+        }
+
+        // Default: Push / Pull / Legs (PPL + Upper/Lower 5 days)
+        return [
+          {
+            dayId: 'sat', type: 'workout', title: 'Push • دفع (صدر وأكتاف وتراي)', subtitle: 'تركيز على الصدر العلوي والضغط',
+            warmups: buildDefaultWarmups('upper', cardioChoice),
+            exercises: [
+              { id: 'ex_incline_db', name: 'ضغط صدر علوي دمبل (Incline DB Press)', machine: 'بنش مائل 30° + دمبل', muscle: 'chest', sets: 4, repRange: '8-10', tips: 'زاوية المقعد الدرجة الثانية، أنزل الدمبل ببطء 3 ثوانٍ.' },
+              { id: 'ex_chest_press', name: 'ضغط صدر جهاز (Chest Press Machine)', machine: 'Chest Press', muscle: 'chest', sets: 3, repRange: '10-12', tips: 'ارتفاع المقعد رقم 4 بحيث تكون المقابض بمحاذاة منتصف الصدر.' },
+              { id: 'ex_lat_raise', name: 'رفرفة جانبي كيبل (Cable Lateral Raise)', machine: 'Cable Station', muscle: 'shoulders', sets: 4, repRange: '12-15', tips: 'البكرة بمستوى المعصم، تركيز على الكتف الجانبي بدون أرجحة.' },
+              { id: 'ex_tricep_push', name: 'ترايسبس حبل (Triceps Rope Pushdown)', machine: 'Cable High Pulley', muscle: 'arms', sets: 3, repRange: '10-12', tips: 'ثبّت المرفقين بجانب الجسم وافتح الحبل بأسفل الحركة.' }
+            ]
+          },
+          {
+            dayId: 'sun', type: 'workout', title: 'Pull • سحب (ظهر وباي)', subtitle: 'عرض الظهر وسمك العضلات الخلفية',
+            warmups: buildDefaultWarmups('upper', cardioChoice),
+            exercises: [
+              { id: 'ex_lat_pulldown', name: 'سحب علوي واسع (Lat Pulldown)', machine: 'Lat Pulldown Machine', muscle: 'back', sets: 4, repRange: '8-12', tips: 'تثبيت الفخذين جيداً، اسحب بالمرفقين نحو الخصر مع صدر مرتفع.' },
+              { id: 'ex_seated_row', name: 'سحب أرضي جالس (Seated Cable Row)', machine: 'Seated Row Cable', muscle: 'back', sets: 3, repRange: '10-12', tips: 'استقامة الظهر وتوقف ثانية عند السحب الكامل.' },
+              { id: 'ex_face_pull', name: 'سحب للوجه (Face Pull)', machine: 'Cable Rope', muscle: 'shoulders', sets: 3, repRange: '15-18', tips: 'اسحب باتجاه الجبهة مع تدوير خارجي للكتف.' },
+              { id: 'ex_bicep_curl', name: 'بايسبس بار متعرج (EZ-Bar Curl)', machine: 'EZ-Bar', muscle: 'arms', sets: 3, repRange: '10-12', tips: 'تحكم كامل في النزول لمدة ثانيتين.' }
+            ]
+          },
+          {
+            dayId: 'mon', type: 'workout', title: 'Legs • أرجل وبطن', subtitle: 'قوة الجزء السفلي والثبات',
+            warmups: buildDefaultWarmups('lower', cardioChoice),
+            exercises: [
+              { id: 'ex_leg_press', name: 'دفع أرجل (Leg Press 45°)', machine: 'Leg Press Machine', muscle: 'legs', sets: 4, repRange: '10-12', tips: 'القدمان بمنتصف اللوح، لا تغلق الركبتين بالكامل.' },
+              { id: 'ex_rdl', name: 'ديدلفت روماني (Romanian Deadlift)', machine: 'Barbell / Smith', muscle: 'legs', sets: 3, repRange: '8-10', tips: 'ادفع الورك للخلف مع ظهر مستقيم.' },
+              { id: 'ex_leg_ext', name: 'رفرفة أمامي (Leg Extension)', machine: 'Leg Extension Machine', muscle: 'legs', sets: 3, repRange: '12-15', tips: 'إعداد المسند رقم 3، ثبات ثانية في القمة.' },
+              { id: 'ex_cable_crunch', name: 'بطن كيبل (Cable Crunch)', machine: 'Cable Rope', muscle: 'abs', sets: 3, repRange: '12-15', tips: 'ثبات الورك وثني العمود الفقري للأسفل.' }
+            ]
+          },
+          restDay('tue'),
+          {
+            dayId: 'wed', type: 'workout', title: 'Upper • علوي شامل', subtitle: 'توازن بين الدفع والسحب العلوي',
+            warmups: buildDefaultWarmups('upper', cardioChoice),
+            exercises: [
+              { id: 'ex_chest_press', name: 'ضغط صدر جهاز (Chest Press Machine)', machine: 'Chest Press', muscle: 'chest', sets: 4, repRange: '8-10', tips: 'ارتفاع المقعد رقم 4، تحكم كامل في النزول.' },
+              { id: 'ex_lat_pulldown', name: 'سحب علوي واسع (Lat Pulldown)', machine: 'Lat Pulldown Machine', muscle: 'back', sets: 4, repRange: '8-10', tips: 'مسكة أوسع قليلاً من الكتف.' },
+              { id: 'ex_shoulder_press', name: 'ضغط أكتاف جهاز (Shoulder Press)', machine: 'Shoulder Press Machine', muscle: 'shoulders', sets: 3, repRange: '10-12', tips: 'المرفقان بزاوية 30 درجة للأمام.' },
+              { id: 'ex_hammer_curl', name: 'هامر كيرل دمبل (Hammer Curl)', machine: 'Dumbbells', muscle: 'arms', sets: 3, repRange: '10-12', tips: 'قبضة محايدة بدون أرجحة.' }
+            ]
+          },
+          {
+            dayId: 'thu', type: 'workout', title: 'Lower • سفلي وبطن', subtitle: 'تركيز على الخلفيات والبطات',
+            warmups: buildDefaultWarmups('lower', cardioChoice),
+            exercises: [
+              { id: 'ex_hack_squat', name: 'هاك سكوات (Hack Squat)', machine: 'Hack Squat Machine', muscle: 'legs', sets: 4, repRange: '8-10', tips: 'نزول عميق مع إبقاء الظهر ملاصقاً للمسند.' },
+              { id: 'ex_leg_curl', name: 'خلفيات أرجل جالس (Seated Leg Curl)', machine: 'Seated Leg Curl', muscle: 'legs', sets: 3, repRange: '10-12', tips: 'اضغط وسادة الفخذ بإحكام.' },
+              { id: 'ex_calf_raise', name: 'بطات واقف (Standing Calf Raise)', machine: 'Calf Raise Machine', muscle: 'legs', sets: 4, repRange: '12-15', tips: 'توقف ثانيتين بالأسفل لتمدد كامل.' }
+            ]
+          },
+          restDay('fri')
+        ];
+      }
+
+      function getTodayDayId() {
+        const jsDay = new Date().getDay();
+        const found = DAYS_ORDER.find(d => d.jsDay === jsDay);
+        return found ? found.id : 'sat';
+      }
+
+      function isoDaysAgo(days) {
+        const d = new Date();
+        d.setDate(d.getDate() - days);
+        return d.toISOString().slice(0, 10);
+      }
+
+      function createFreshState() {
+        return {
+          version: '1.2',
+          setupCompleted: false,
+          selectedSplit: 'ppl',
+          preferredCardio: 'treadmill',
+          settings: {
+            theme: 'dark',
+            defaultRestSec: 90,
+            autoStartTimer: true,
+            soundEnabled: true
+          },
+          schedule: buildScheduleFromTemplate('ppl', 'treadmill'),
+          history: [],
+          drafts: {}
+        };
+      }
+
+      let state = loadState();
+      let currentTab = state.setupCompleted ? 'schedule' : 'onboarding';
+      let selectedDayId = getTodayDayId();
+      let selectedProgressExId = '';
+      let weightChartInstance = null;
+      let volumeChartInstance = null;
+
+      // Onboarding local selection before confirming
+      let pendingSplitId = state.selectedSplit || 'ppl';
+      let pendingCardioId = state.preferredCardio || 'treadmill';
+
+      // Timer state
+      let timerTotalSec = state.settings.defaultRestSec || 90;
+      let timerRemainingSec = timerTotalSec;
+      let timerRunning = false;
+      let timerIntervalId = null;
+      let timerLabel = 'مؤقت الراحة الذكي (Rest Timer)';
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && Array.isArray(parsed.schedule) && parsed.schedule.length === 7) {
+              if (!parsed.settings) parsed.settings = { theme: 'dark', defaultRestSec: 90, autoStartTimer: true, soundEnabled: true };
+              if (!parsed.settings.theme) parsed.settings.theme = 'dark';
+              if (!Array.isArray(parsed.history)) parsed.history = [];
+              if (!parsed.drafts) parsed.drafts = {};
+              parsed.schedule.forEach(d => {
+                if (!Array.isArray(d.warmups)) d.warmups = [];
+                if (!Array.isArray(d.exercises)) d.exercises = [];
+              });
+              return parsed;
+            }
+          }
+        } catch (e) {}
+        return createFreshState();
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {}
+      }
+
+      // ---- Theme Management (Dark / Light Mode) ----
+      function applyTheme() {
+        const isDark = state.settings.theme !== 'light';
+        document.documentElement.classList.toggle('dark', isDark);
+        const metaTheme = document.getElementById('meta-theme-color');
+        if (metaTheme) metaTheme.setAttribute('content', isDark ? '#090B10' : '#FFFFFF');
+
+        const iconWrap = document.getElementById('theme-icon-wrap');
+        const label = document.getElementById('theme-label');
+        if (iconWrap) {
+          iconWrap.innerHTML = isDark
+            ? '<i data-lucide="sun" class="w-4 h-4 text-amber-400"></i>'
+            : '<i data-lucide="moon" class="w-4 h-4 text-indigo-600"></i>';
+        }
+        if (label) {
+          label.textContent = isDark ? 'نهاري' : 'ليلي';
+        }
+        refreshIcons();
+
+        if (currentTab === 'progress') {
+          renderProgressView();
+        }
+      }
+
+      document.getElementById('btn-theme-toggle').addEventListener('click', () => {
+        state.settings.theme = state.settings.theme === 'light' ? 'dark' : 'light';
+        saveState();
+        applyTheme();
+        showToast(state.settings.theme === 'light' ? 'تم التبديل للوضع النهاري الأبيض ☀️' : 'تم التبديل للوضع الليلي الداكن 🌙', 'info');
+      });
+
+      function escapeHtml(str) {
+        return String(str == null ? '' : str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function formatDateAr(isoStr) {
+        try {
+          const d = new Date(isoStr + (isoStr.length === 10 ? 'T12:00:00' : ''));
+          return d.toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' });
+        } catch (e) {
+          return isoStr;
+        }
+      }
+
+      function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        const styles = {
+          success: 'bg-emerald-600 dark:bg-emerald-950/95 border-emerald-400/60 text-white dark:text-emerald-100',
+          pr:      'bg-amber-500 dark:bg-amber-950/95 border-amber-300 text-slate-950 dark:text-amber-100',
+          error:   'bg-rose-600 dark:bg-rose-950/95 border-rose-400/60 text-white dark:text-rose-100',
+          info:    'bg-slate-900 border-sky-500/40 text-white'
+        };
+        const icons = { success: 'check-circle-2', pr: 'trophy', error: 'alert-circle', info: 'info' };
+        toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-xl backdrop-blur-md text-sm font-bold animate-slide-up ${styles[type] || styles.info}`;
+        toast.innerHTML = `<i data-lucide="${icons[type] || 'info'}" class="w-5 h-5 shrink-0"></i><span class="leading-snug">${escapeHtml(message)}</span>`;
+        container.appendChild(toast);
+        refreshIcons();
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(-8px)';
+          toast.style.transition = 'all 0.25s ease';
+          setTimeout(() => toast.remove(), 260);
+        }, type === 'pr' ? 4200 : 2800);
+      }
+
+      function refreshIcons() {
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
+      }
+
+      function playTimerChime() {
+        if (!state.settings.soundEnabled) return;
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return;
+          const ctx = new AudioCtx();
+          const now = ctx.currentTime;
+          [880, 1174.66].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.18);
+            gain.gain.setValueAtTime(0.001, now + idx * 0.18);
+            gain.gain.exponentialRampToValueAtTime(0.22, now + idx * 0.18 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.18 + 0.22);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + idx * 0.18);
+            osc.stop(now + idx * 0.18 + 0.24);
+          });
+        } catch (e) {}
+        try { if (navigator.vibrate) navigator.vibrate([180, 90, 220]); } catch (e) {}
+      }
+
+      function celebratePR(exName, newWeight) {
+        showToast(`🏆 رقم قياسي جديد (PR)! ${exName} — ${newWeight} كجم`, 'pr');
+        if (typeof window.confetti === 'function') {
+          try {
+            window.confetti({ particleCount: 70, spread: 65, origin: { y: 0.7 }, colors: ['#F59E0B', '#10B981', '#38BDF8', '#FFFFFF'] });
+          } catch (e) {}
+        }
+      }
+
+      // ---- Analytics Helpers ----
+      function getExerciseHistory(exerciseId) {
+        const records = [];
+        const sorted = [...state.history].sort((a, b) => a.date.localeCompare(b.date));
+        for (const sess of sorted) {
+          const entry = (sess.entries || []).find(e => e.exerciseId === exerciseId);
+          if (entry && entry.sets && entry.sets.length > 0) {
+            let maxW = 0, vol = 0, bestSet = null;
+            for (const s of entry.sets) {
+              const w = Number(s.w) || 0;
+              const r = Number(s.r) || 0;
+              vol += w * r;
+              if (w > maxW || (w === maxW && (!bestSet || r > bestSet.r))) {
+                maxW = w;
+                bestSet = { w, r };
+              }
+            }
+            records.push({ date: sess.date, maxWeight: maxW, volume: Math.round(vol), sets: entry.sets, bestSet });
+          }
+        }
+        return records;
+      }
+
+      function getExercisePR(exerciseId) {
+        const hist = getExerciseHistory(exerciseId);
+        let maxW = 0, maxVol = 0;
+        for (const h of hist) {
+          if (h.maxWeight > maxW) maxW = h.maxWeight;
+          if (h.volume > maxVol) maxVol = h.volume;
+        }
+        return { maxWeight: maxW, maxVolume: maxVol };
+      }
+
+      function getLastSessionForExercise(exerciseId) {
+        const hist = getExerciseHistory(exerciseId);
+        return hist.length > 0 ? hist[hist.length - 1] : null;
+      }
+
+      function getAllUniqueExercises() {
+        const map = new Map();
+        for (const day of state.schedule) {
+          for (const ex of day.exercises || []) {
+            if (!map.has(ex.id)) map.set(ex.id, { id: ex.id, name: ex.name, muscle: ex.muscle, machine: ex.machine });
+          }
+        }
+        for (const sess of state.history) {
+          for (const entry of sess.entries || []) {
+            if (!map.has(entry.exerciseId)) map.set(entry.exerciseId, { id: entry.exerciseId, name: entry.name, muscle: entry.muscle || 'chest', machine: '' });
+          }
+        }
+        return Array.from(map.values());
+      }
+
+      function isDayCompletedThisWeek(dayId) {
+        const cutoff = isoDaysAgo(6);
+        return state.history.some(s => s.dayId === dayId && s.date >= cutoff);
+      }
+
+      function ensureDayDraft(dayObj) {
+        if (!state.drafts[dayObj.dayId]) {
+          state.drafts[dayObj.dayId] = { warmupsDone: {} };
+        }
+        const dayDraft = state.drafts[dayObj.dayId];
+        if (!dayDraft.warmupsDone) dayDraft.warmupsDone = {};
+
+        for (const ex of dayObj.exercises) {
+          if (!dayDraft[ex.id] || !Array.isArray(dayDraft[ex.id].sets)) {
+            const last = getLastSessionForExercise(ex.id);
+            const targetSets = Math.max(1, Number(ex.sets) || 3);
+            const defaultReps = parseInt(String(ex.repRange || '10').split('-')[0], 10) || 10;
+            const setsArr = [];
+            for (let i = 0; i < targetSets; i++) {
+              const prevSet = last && last.sets[i] ? last.sets[i] : (last && last.sets[0] ? last.sets[0] : null);
+              setsArr.push({
+                w: prevSet ? prevSet.w : '',
+                r: prevSet ? prevSet.r : defaultReps,
+                done: false,
+                isPR: false
+              });
+            }
+            dayDraft[ex.id] = { sets: setsArr };
+          }
+        }
+        return dayDraft;
+      }
+
+      // ---- Navigation ----
+      function switchTab(tabName) {
+        currentTab = tabName;
+        document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+        const activeView = document.getElementById(`view-${tabName}`);
+        if (activeView) activeView.classList.remove('hidden');
+
+        const hideNav = tabName === 'onboarding';
+        document.getElementById('desktop-nav').classList.toggle('md:hidden', hideNav);
+        document.getElementById('mobile-nav').classList.toggle('hidden', hideNav);
+
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+          const active = btn.dataset.nav === tabName;
+          btn.className = active
+            ? 'nav-btn px-3.5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition bg-emerald-500 text-white dark:text-slate-950 shadow-md shadow-emerald-500/20'
+            : 'nav-btn px-3.5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/70';
+        });
+
+        document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+          const active = btn.dataset.nav === tabName;
+          btn.className = active
+            ? 'mobile-nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 transition'
+            : 'mobile-nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition';
+        });
+
+        if (tabName === 'onboarding') renderOnboardingView();
+        else if (tabName === 'schedule') renderScheduleView();
+        else if (tabName === 'workout') renderWorkoutView();
+        else if (tabName === 'progress') renderProgressView();
+        else if (tabName === 'data') renderDataView();
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // =========================================================
+      // VIEW 0: ONBOARDING / PROGRAM & WARM-UP SELECTOR
+      // =========================================================
+      function renderOnboardingView() {
+        const container = document.getElementById('view-onboarding');
+        container.innerHTML = `
+          <div class="max-w-3xl mx-auto">
+            <div class="text-center mb-6">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-extrabold mb-3">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                <span>ابدأ من الصفر • إعداد جدولك الشخصي</span>
+              </div>
+              <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-2">اختر النظام التدريبي المناسب لك</h2>
+              <p class="text-sm text-slate-500 dark:text-slate-400 max-w-xl mx-auto">حدّد أسلوب التمرين الذي تفضله ونوع الإحماء المفضل قبل الحديد، ويمكنك لاحقاً تعديل أي يوم أو تمرين بحرية كاملة.</p>
+            </div>
+
+            <!-- Step 1: Split Selection -->
+            <div class="mb-6">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="w-6 h-6 rounded-full bg-emerald-500 text-white dark:text-slate-950 text-xs font-black flex items-center justify-center">1</span>
+                <h3 class="text-base font-extrabold text-slate-900 dark:text-white">نوع الجدول الأسبوعي (Training Split)</h3>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                ${PROGRAM_TEMPLATES.map(tpl => {
+                  const selected = pendingSplitId === tpl.id;
+                  return `
+                    <button type="button" data-pick-split="${tpl.id}" class="text-right p-4 rounded-2xl border-2 transition-all active:scale-[0.99] ${
+                      selected
+                        ? 'app-card border-emerald-500 ring-2 ring-emerald-500/20 shadow-lg'
+                        : 'app-card border-slate-200 dark:border-borderDark hover:border-slate-400 dark:hover:border-slate-600'
+                    }">
+                      <div class="flex items-start justify-between gap-2 mb-2">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                          selected ? 'bg-emerald-500 text-white dark:text-slate-950' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                        }">
+                          <i data-lucide="${tpl.icon}" class="w-5 h-5"></i>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                          selected
+                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                        }">${tpl.badge}</span>
+                      </div>
+                      <div class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mb-1">${tpl.name}</div>
+                      <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">${tpl.desc}</p>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <!-- Step 2: Preferred Warm-up Cardio -->
+            <div class="mb-7">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="w-6 h-6 rounded-full bg-amber-500 text-white dark:text-slate-950 text-xs font-black flex items-center justify-center">2</span>
+                <h3 class="text-base font-extrabold text-slate-900 dark:text-white">جهاز الإحماء المفضل قبل الحديد (Warm-up)</h3>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                ${[
+                  { id: 'treadmill', title: 'السير (Treadmill)', desc: 'مشي مائل 5–10 دقائق', icon: 'footprints' },
+                  { id: 'bike', title: 'الدراجة الثابتة (Bike)', desc: 'تسخين لطيف على الركب', icon: 'bike' },
+                  { id: 'elliptical', title: 'الأوربتراك (Elliptical)', desc: 'تسخين علوي وسفلي معاً', icon: 'activity' }
+                ].map(c => {
+                  const sel = pendingCardioId === c.id;
+                  return `
+                    <button type="button" data-pick-cardio="${c.id}" class="text-right p-3.5 rounded-2xl border-2 flex items-center gap-3 transition ${
+                      sel
+                        ? 'app-card border-amber-500 bg-amber-500/5'
+                        : 'app-card border-slate-200 dark:border-borderDark hover:border-slate-400 dark:hover:border-slate-600'
+                    }">
+                      <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        sel ? 'bg-amber-500 text-white dark:text-slate-950' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                      }">
+                        <i data-lucide="${c.icon}" class="w-5 h-5"></i>
+                      </div>
+                      <div class="min-w-0">
+                        <div class="text-sm font-extrabold text-slate-900 dark:text-white">${c.title}</div>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400">${c.desc}</div>
+                      </div>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <!-- Confirm CTA -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button id="btn-confirm-onboarding" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white dark:text-slate-950 font-black text-base flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/25 active:scale-95 transition">
+                <i data-lucide="rocket" class="w-5 h-5"></i>
+                <span>اعتماد الجدول والبدء الآن</span>
+              </button>
+              ${state.setupCompleted ? `
+                <button id="btn-cancel-onboarding" class="w-full sm:w-auto px-6 py-4 rounded-2xl app-card border text-slate-600 dark:text-slate-300 font-bold text-sm hover:border-slate-400 transition">
+                  العودة لجدولي الحالي
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+
+        container.querySelectorAll('[data-pick-split]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            pendingSplitId = btn.dataset.pickSplit;
+            renderOnboardingView();
+          });
+        });
+
+        container.querySelectorAll('[data-pick-cardio]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            pendingCardioId = btn.dataset.pickCardio;
+            renderOnboardingView();
+          });
+        });
+
+        document.getElementById('btn-confirm-onboarding').addEventListener('click', () => {
+          state.selectedSplit = pendingSplitId;
+          state.preferredCardio = pendingCardioId;
+          state.schedule = buildScheduleFromTemplate(pendingSplitId, pendingCardioId);
+          state.drafts = {};
+          state.setupCompleted = true;
+          saveState();
+          const tpl = PROGRAM_TEMPLATES.find(t => t.id === pendingSplitId);
+          showToast(`تم تجهيز جدول "${tpl ? tpl.name : ''}" مع جلسات الإحماء!`, 'success');
+          switchTab('schedule');
+        });
+
+        const cancelBtn = document.getElementById('btn-cancel-onboarding');
+        if (cancelBtn) {
+          cancelBtn.addEventListener('click', () => switchTab('schedule'));
+        }
+
+        refreshIcons();
+      }
+
+      // =========================================================
+      // VIEW 1: WEEKLY SCHEDULE & OVERVIEW
+      // =========================================================
+      function renderScheduleView() {
+        const container = document.getElementById('view-schedule');
+        const todayId = getTodayDayId();
+        const workoutDays = state.schedule.filter(d => d.type === 'workout');
+        const completedThisWeek = workoutDays.filter(d => isDayCompletedThisWeek(d.dayId)).length;
+        const pct = workoutDays.length > 0 ? Math.round((completedThisWeek / workoutDays.length) * 100) : 0;
+
+        const totalSessions = state.history.length;
+        const totalPRs = state.history.reduce((sum, s) => sum + (Number(s.prsCount) || 0), 0);
+        const lastWeekVol = state.history
+          .filter(s => s.date >= isoDaysAgo(6))
+          .reduce((sum, s) => sum + (Number(s.totalVolume) || 0), 0);
+
+        const todayObj = state.schedule.find(d => d.dayId === todayId);
+        const todayMeta = DAYS_ORDER.find(d => d.id === todayId);
+
+        let cardsHtml = '';
+        for (const meta of DAYS_ORDER) {
+          const day = state.schedule.find(d => d.dayId === meta.id);
+          const isToday = meta.id === todayId;
+          const isRest = day.type === 'rest';
+          const done = !isRest && isDayCompletedThisWeek(meta.id);
+          const muscles = [...new Set((day.exercises || []).map(e => e.muscle))];
+          const warmupsCount = (day.warmups || []).length;
+
+          cardsHtml += `
+            <div class="group relative rounded-2xl border p-4 transition-all duration-200 ${
+              isToday
+                ? 'app-card border-emerald-500 ring-1 ring-emerald-500/30 pulse-today'
+                : isRest
+                  ? 'app-card opacity-90 hover:border-indigo-400/60'
+                  : 'app-card hover:border-slate-400 dark:hover:border-slate-600'
+            }">
+              <div class="flex items-start justify-between gap-2 mb-3">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-base font-extrabold ${isToday ? 'text-emerald-600 dark:text-emerald-300' : 'text-slate-900 dark:text-white'}">${meta.ar}</span>
+                  ${isToday ? '<span class="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-emerald-500 text-white dark:text-slate-950">اليوم</span>' : ''}
+                  ${done ? '<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i>منجز</span>' : ''}
+                </div>
+                <button data-edit-day="${meta.id}" title="تخصيص اليوم" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition">
+                  <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              ${isRest ? `
+                <div class="flex items-center gap-3 py-2">
+                  <div class="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shrink-0">
+                    <i data-lucide="moon-star" class="w-5 h-5"></i>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="text-sm font-bold text-indigo-700 dark:text-indigo-200 truncate">${escapeHtml(day.title)}</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 truncate">${escapeHtml(day.subtitle || 'استشفاء عضلي وراحة')}</div>
+                  </div>
+                </div>
+              ` : `
+                <div class="mb-3">
+                  <div class="text-sm font-extrabold text-slate-900 dark:text-slate-100 leading-snug mb-1">${escapeHtml(day.title)}</div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400">${warmupsCount > 0 ? `🔥 ${warmupsCount} إحماء • ` : ''}${day.exercises.length} تمارين • ${day.exercises.reduce((a, b) => a + (Number(b.sets) || 0), 0)} جولة</div>
+                </div>
+                <div class="flex flex-wrap gap-1.5 mb-4">
+                  ${muscles.length > 0 ? muscles.map(m => {
+                    const mm = MUSCLE_META[m] || MUSCLE_META.chest;
+                    return `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold border ${mm.bg} ${mm.text} ${mm.border}">${mm.label}</span>`;
+                  }).join('') : '<span class="text-xs text-slate-400">اضغط فتح التمارين للإضافة</span>'}
+                </div>
+              `}
+
+              <button data-open-day="${meta.id}" class="w-full py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition active:scale-[0.98] ${
+                isRest
+                  ? 'bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-200 border border-indigo-500/30'
+                  : isToday
+                    ? 'bg-emerald-500 hover:bg-emerald-400 text-white dark:text-slate-950 shadow-lg shadow-emerald-500/20'
+                    : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100'
+              }">
+                <i data-lucide="${isRest ? 'sparkles' : 'play'}" class="w-3.5 h-3.5"></i>
+                <span>${isRest ? 'نصائح الاستشفاء' : (isToday ? 'ابدأ الإحماء وتمرين اليوم' : 'فتح التمارين')}</span>
+              </button>
+            </div>
+          `;
+        }
+
+        container.innerHTML = `
+          <!-- Overview Banner -->
+          <section class="app-card rounded-3xl border p-5 sm:p-6 mb-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+              <div>
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-xs font-bold mb-2">
+                  <i data-lucide="flame" class="w-3.5 h-3.5"></i>
+                  <span>نظرة عامة على الأسبوع • ${todayMeta.ar}</span>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">${escapeHtml(todayObj.title)}</h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">${todayObj.type === 'rest' ? 'يوم راحة مخصص لإعادة البناء العضلي والاستشفاء.' : `ابدأ بجلسة الإحماء (${(todayObj.warmups || []).length} فقرات) ثم ${todayObj.exercises.length} تمارين حديد.`}</p>
+              </div>
+              <button data-open-day="${todayId}" class="shrink-0 px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white dark:text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 active:scale-95 transition">
+                <i data-lucide="${todayObj.type === 'rest' ? 'moon-star' : 'dumbbell'}" class="w-4 h-4"></i>
+                <span>${todayObj.type === 'rest' ? 'عرض نصائح الراحة' : 'الدخول لتمرين اليوم'}</span>
+              </button>
+            </div>
+
+            <!-- Weekly Progress Bar -->
+            <div class="app-subtle border rounded-2xl p-3.5 mb-4">
+              <div class="flex items-center justify-between text-xs font-bold mb-2">
+                <span class="text-slate-600 dark:text-slate-300">إنجاز الأسبوع الحالي</span>
+                <span class="text-emerald-600 dark:text-emerald-400 tabular-nums">${completedThisWeek} / ${workoutDays.length} أيام تمرين (${pct}%)</span>
+              </div>
+              <div class="w-full h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-l from-emerald-500 to-teal-500 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+              </div>
+            </div>
+
+            <!-- Quick KPIs -->
+            <div class="grid grid-cols-3 gap-2.5 sm:gap-4">
+              <div class="app-subtle rounded-2xl border p-3 text-center">
+                <div class="text-xs text-slate-500 dark:text-slate-400 mb-1">الجلسات المسجلة</div>
+                <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tabular-nums">${totalSessions}</div>
+              </div>
+              <div class="app-subtle rounded-2xl border p-3 text-center">
+                <div class="text-xs text-slate-500 dark:text-slate-400 mb-1">حجم الأسبوع (كجم)</div>
+                <div class="text-xl sm:text-2xl font-black text-sky-600 dark:text-sky-400 tabular-nums">${lastWeekVol.toLocaleString('en-US')}</div>
+              </div>
+              <div class="app-subtle rounded-2xl border p-3 text-center">
+                <div class="text-xs text-slate-500 dark:text-slate-400 mb-1">أرقام قياسية PR</div>
+                <div class="text-xl sm:text-2xl font-black text-amber-500 dark:text-amber-400 tabular-nums">${totalPRs}</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 7 Days Grid Header -->
+          <div class="flex items-center justify-between gap-2 mb-3.5 flex-wrap">
+            <h3 class="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <i data-lucide="calendar-range" class="w-5 h-5 text-emerald-500"></i>
+              <span>الجدول الأسبوعي (السبت – الجمعة)</span>
+            </h3>
+            <button id="btn-change-split" class="px-3 py-1.5 rounded-xl app-card border hover:border-emerald-500/50 text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 transition">
+              <i data-lucide="repeat" class="w-3.5 h-3.5 text-emerald-500"></i>
+              <span>تغيير النظام التدريبي</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            ${cardsHtml}
+          </div>
+        `;
+
+        container.querySelectorAll('[data-open-day]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            selectedDayId = btn.dataset.openDay;
+            switchTab('workout');
+          });
+        });
+
+        container.querySelectorAll('[data-edit-day]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openEditDayModal(btn.dataset.editDay);
+          });
+        });
+
+        document.getElementById('btn-change-split').addEventListener('click', () => {
+          pendingSplitId = state.selectedSplit || 'ppl';
+          pendingCardioId = state.preferredCardio || 'treadmill';
+          switchTab('onboarding');
+        });
+
+        refreshIcons();
+      }
+
+      // =========================================================
+      // VIEW 2: ACTIVE WORKOUT (WARM-UP + LIFTING)
+      // =========================================================
+      function renderWorkoutView() {
+        const container = document.getElementById('view-workout');
+        const dayObj = state.schedule.find(d => d.dayId === selectedDayId) || state.schedule[0];
+        const dayMeta = DAYS_ORDER.find(d => d.id === dayObj.dayId);
+        const todayId = getTodayDayId();
+
+        const dayPillsHtml = DAYS_ORDER.map(d => {
+          const dObj = state.schedule.find(x => x.dayId === d.id);
+          const active = d.id === dayObj.dayId;
+          const isToday = d.id === todayId;
+          return `
+            <button data-select-day="${d.id}" class="shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 ${
+              active
+                ? 'bg-emerald-500 text-white dark:text-slate-950 border-emerald-500 shadow-md shadow-emerald-500/20'
+                : 'app-card text-slate-600 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600'
+            }">
+              <span>${d.ar}</span>
+              ${isToday ? `<span class="w-1.5 h-1.5 rounded-full ${active ? 'bg-white dark:bg-slate-950' : 'bg-emerald-500'}"></span>` : ''}
+              ${dObj.type === 'rest' ? '<i data-lucide="moon" class="w-3 h-3 opacity-75"></i>' : ''}
+            </button>
+          `;
+        }).join('');
+
+        // REST DAY VIEW
+        if (dayObj.type === 'rest') {
+          container.innerHTML = `
+            <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-3 mb-4">${dayPillsHtml}</div>
+
+            <div class="app-card rounded-3xl border border-indigo-400/40 p-6 sm:p-8 text-center mb-6">
+              <div class="w-16 h-16 mx-auto rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center mb-4">
+                <i data-lucide="moon-star" class="w-8 h-8"></i>
+              </div>
+              <h2 class="text-2xl font-black text-slate-900 dark:text-white mb-1">${escapeHtml(dayObj.title)}</h2>
+              <p class="text-sm text-slate-500 dark:text-indigo-200/80 max-w-md mx-auto mb-5">${escapeHtml(dayObj.subtitle || 'العضلات تنمو أثناء الراحة، وليس داخل النادي فقط. استمتع باستشفاء هادئ اليوم.')}</p>
+              <button id="btn-edit-this-day" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 inline-flex items-center gap-2 transition">
+                <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                <span>تحويل إلى يوم تمرين أو تعديل</span>
+              </button>
+            </div>
+
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+              <i data-lucide="heart-pulse" class="w-5 h-5 text-indigo-500"></i>
+              <span>نصائح الاستشفاء العضلي ليوم الراحة</span>
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              ${RECOVERY_TIPS.map(tip => `
+                <div class="app-card rounded-2xl border p-4 flex items-start gap-3.5">
+                  <div class="w-10 h-10 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shrink-0">
+                    <i data-lucide="${tip.icon}" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-extrabold text-slate-900 dark:text-white mb-1">${tip.title}</h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">${tip.desc}</p>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+          bindWorkoutDayPills(container);
+          const editBtn = document.getElementById('btn-edit-this-day');
+          if (editBtn) editBtn.addEventListener('click', () => openEditDayModal(dayObj.dayId));
+          refreshIcons();
+          return;
+        }
+
+        // WORKOUT DAY VIEW
+        const dayDraft = ensureDayDraft(dayObj);
+        if (!Array.isArray(dayObj.warmups)) dayObj.warmups = [];
+
+        let liveTotalSets = 0, liveDoneSets = 0, liveTotalVolume = 0, livePRCount = 0;
+        for (const ex of dayObj.exercises) {
+          const sets = (dayDraft[ex.id] && dayDraft[ex.id].sets) || [];
+          liveTotalSets += sets.length;
+          for (const s of sets) {
+            if (s.done) {
+              liveDoneSets++;
+              liveTotalVolume += (Number(s.w) || 0) * (Number(s.r) || 0);
+              if (s.isPR) livePRCount++;
+            }
+          }
+        }
+
+        const warmupsDoneCount = dayObj.warmups.filter(w => dayDraft.warmupsDone[w.id]).length;
+
+        // Warm-up Section HTML
+        const warmupsHtml = `
+          <section class="app-card rounded-2xl border border-amber-500/40 overflow-hidden mb-5 shadow-sm">
+            <div class="px-4 py-3.5 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between gap-2 flex-wrap">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-amber-500 text-white dark:text-slate-950 flex items-center justify-center shrink-0">
+                  <i data-lucide="flame" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white">أولاً: الإحماء والتسخين قبل الحديد (Warm-up)</h3>
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-800 dark:text-amber-300 tabular-nums">${warmupsDoneCount}/${dayObj.warmups.length}</span>
+                  </div>
+                  <p class="text-[11px] text-slate-600 dark:text-slate-400">سخّن جسمك ومفاصلك قبل رفع الأوزان لرفع الأداء ومنع الإصابات</p>
+                </div>
+              </div>
+              <button id="btn-add-warmup" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white dark:text-slate-950 text-xs font-extrabold flex items-center gap-1 active:scale-95 transition">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>إضافة إحماء</span>
+              </button>
+            </div>
+
+            <div class="p-3 sm:p-4 space-y-2">
+              ${dayObj.warmups.length === 0 ? `
+                <div class="text-center py-4 text-xs text-slate-500 dark:text-slate-400">
+                  لا توجد فقرات إحماء مضافة لهذا اليوم — اضغط "إضافة إحماء" لإضافة السير أو الدراجة أو الإطالات.
+                </div>
+              ` : dayObj.warmups.map(w => {
+                const done = !!dayDraft.warmupsDone[w.id];
+                return `
+                  <div class="flex items-center justify-between gap-2 p-2.5 sm:p-3 rounded-xl border transition ${
+                    done
+                      ? 'bg-emerald-500/10 border-emerald-500/35'
+                      : 'app-subtle'
+                  }">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <button data-toggle-warmup="${w.id}" title="إتمام الإحماء" class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition active:scale-90 ${
+                        done
+                          ? 'bg-emerald-500 text-white dark:text-slate-950 shadow-sm'
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700'
+                      }">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                      </button>
+                      <div class="min-w-0">
+                        <div class="text-xs sm:text-sm font-extrabold ${done ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'} truncate">${escapeHtml(w.name)}</div>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                          <span class="font-bold text-amber-600 dark:text-amber-400 tabular-nums">${w.durationMin} دقائق</span>${w.details ? ' • ' + escapeHtml(w.details) : ''}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button data-start-wu-timer="${w.durationMin}" data-wu-name="${escapeHtml(w.name)}" title="تشغيل مؤقت الإحماء" class="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 text-[11px] font-bold flex items-center gap-1 transition">
+                        <i data-lucide="timer" class="w-3.5 h-3.5"></i>
+                        <span class="hidden sm:inline">مؤقت</span>
+                      </button>
+                      <button data-delete-warmup="${w.id}" title="حذف فقرة الإحماء" class="w-8 h-8 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 dark:text-rose-400 flex items-center justify-center transition">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </section>
+        `;
+
+        // Exercises List HTML
+        const exercisesHtml = dayObj.exercises.length === 0
+          ? `
+            <div class="app-card rounded-3xl border border-dashed p-10 text-center">
+              <div class="w-14 h-14 mx-auto rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mb-3">
+                <i data-lucide="dumbbell" class="w-7 h-7"></i>
+              </div>
+              <h3 class="text-base font-extrabold text-slate-900 dark:text-white mb-1">لا توجد تمارين حديد في هذا اليوم بعد</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">ابدأ بإضافة تمارينك والأجهزة المخصصة لهذا اليوم.</p>
+              <button id="btn-empty-add-ex" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white dark:text-slate-950 font-extrabold text-sm inline-flex items-center gap-2 transition">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>إضافة تمرين جديد</span>
+              </button>
+            </div>
+          `
+          : dayObj.exercises.map((ex, exIdx) => {
+              const mm = MUSCLE_META[ex.muscle] || MUSCLE_META.chest;
+              const lastSess = getLastSessionForExercise(ex.id);
+              const prInfo = getExercisePR(ex.id);
+              const sets = dayDraft[ex.id].sets;
+              const exVol = sets.reduce((sum, s) => sum + (s.done ? (Number(s.w) || 0) * (Number(s.r) || 0) : 0), 0);
+              const exDoneCount = sets.filter(s => s.done).length;
+
+              const setsRowsHtml = sets.map((s, sIdx) => {
+                const prevSet = lastSess && lastSess.sets[sIdx] ? lastSess.sets[sIdx] : null;
+                const prevText = prevSet ? `${prevSet.w} كجم × ${prevSet.r}` : '—';
+                return `
+                  <div class="grid grid-cols-12 items-center gap-1.5 sm:gap-2 p-2 rounded-xl border transition ${
+                    s.done
+                      ? 'bg-emerald-500/10 border-emerald-500/40'
+                      : 'app-subtle'
+                  }">
+                    <div class="col-span-2 sm:col-span-1 text-center">
+                      <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-black tabular-nums ${
+                        s.done ? 'bg-emerald-500 text-white dark:text-slate-950' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                      }">${sIdx + 1}</span>
+                    </div>
+
+                    <div class="col-span-3 sm:col-span-3 text-center">
+                      <div class="text-[10px] text-slate-400 leading-none mb-0.5">السابق</div>
+                      <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 tabular-nums truncate">${prevText}</div>
+                    </div>
+
+                    <div class="col-span-3 sm:col-span-3">
+                      <input
+                        type="number"
+                        inputmode="decimal"
+                        step="0.5"
+                        min="0"
+                        placeholder="كجم"
+                        value="${s.w !== '' ? s.w : ''}"
+                        data-set-input="w"
+                        data-ex-id="${ex.id}"
+                        data-set-idx="${sIdx}"
+                        class="app-input w-full h-11 px-2 text-center rounded-xl border focus:border-emerald-500 focus:outline-none text-sm font-extrabold tabular-nums"
+                      />
+                    </div>
+
+                    <div class="col-span-2 sm:col-span-3">
+                      <input
+                        type="number"
+                        inputmode="numeric"
+                        min="0"
+                        placeholder="تكرار"
+                        value="${s.r !== '' ? s.r : ''}"
+                        data-set-input="r"
+                        data-ex-id="${ex.id}"
+                        data-set-idx="${sIdx}"
+                        class="app-input w-full h-11 px-2 text-center rounded-xl border focus:border-emerald-500 focus:outline-none text-sm font-extrabold tabular-nums"
+                      />
+                    </div>
+
+                    <div class="col-span-2 sm:col-span-2 flex items-center justify-end gap-1">
+                      <button
+                        data-toggle-set="${ex.id}"
+                        data-set-idx="${sIdx}"
+                        title="إتمام الجولة"
+                        class="w-11 h-11 rounded-xl flex items-center justify-center font-black transition active:scale-90 ${
+                          s.done
+                            ? 'bg-emerald-500 text-white dark:text-slate-950 shadow-md shadow-emerald-500/30'
+                            : 'bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
+                        }">
+                        <i data-lucide="check" class="w-5 h-5"></i>
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('');
+
+              return `
+                <article class="app-card rounded-2xl border overflow-hidden shadow-sm">
+                  <div class="p-4 border-b border-slate-200 dark:border-borderDark/80">
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap mb-1.5">
+                          <span class="px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${mm.bg} ${mm.text} ${mm.border}">${mm.label}</span>
+                          ${(() => {
+                            const eqKey = inferEquipment(ex);
+                            const eq = EQUIPMENT_META[eqKey] || EQUIPMENT_META.machine;
+                            return `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold border inline-flex items-center gap-1 ${eq.cls}"><i data-lucide="${eq.icon}" class="w-3 h-3"></i>${eq.label}</span>`;
+                          })()}
+                          <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 tabular-nums">${ex.sets} جولات × ${escapeHtml(ex.repRange)} تكرار</span>
+                          ${prInfo.maxWeight > 0 ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 tabular-nums">PR: ${prInfo.maxWeight} كجم</span>` : ''}
+                        </div>
+                        <h3 class="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white leading-snug">${escapeHtml(ex.name)}</h3>
+                        ${ex.machine ? `<p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5"><i data-lucide="cog" class="w-3.5 h-3.5 text-slate-400"></i><span>الجهاز: ${escapeHtml(ex.machine)}</span></p>` : ''}
+                      </div>
+
+                      <div class="flex items-center gap-1 shrink-0">
+                        <button data-move-ex="up" data-ex-idx="${exIdx}" title="تحريك لأعلى" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition ${exIdx === 0 ? 'opacity-30 pointer-events-none' : ''}">
+                          <i data-lucide="chevron-up" class="w-4 h-4"></i>
+                        </button>
+                        <button data-move-ex="down" data-ex-idx="${exIdx}" title="تحريك لأسفل" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition ${exIdx === dayObj.exercises.length - 1 ? 'opacity-30 pointer-events-none' : ''}">
+                          <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </button>
+                        <button data-edit-ex="${ex.id}" title="تعديل التمرين" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition">
+                          <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button data-delete-ex="${ex.id}" title="حذف التمرين" class="w-8 h-8 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 dark:text-rose-400 flex items-center justify-center transition">
+                          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                      </div>
+                    </div>
+
+                    ${ex.tips ? `
+                      <div class="mt-3 p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-start gap-2">
+                        <i data-lucide="lightbulb" class="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5"></i>
+                        <p class="text-xs text-slate-700 dark:text-sky-100/90 leading-relaxed"><span class="font-bold text-sky-700 dark:text-sky-300">إعدادات ونصيحة: </span>${escapeHtml(ex.tips)}</p>
+                      </div>
+                    ` : ''}
+                  </div>
+
+                  <div class="p-3 sm:p-4">
+                    <div class="grid grid-cols-12 gap-1.5 sm:gap-2 px-2 mb-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400 text-center">
+                      <div class="col-span-2 sm:col-span-1">جولة</div>
+                      <div class="col-span-3 sm:col-span-3">آخر جلسة</div>
+                      <div class="col-span-3 sm:col-span-3">الوزن (كجم)</div>
+                      <div class="col-span-2 sm:col-span-3">التكرار</div>
+                      <div class="col-span-2 sm:col-span-2">تم</div>
+                    </div>
+                    <div class="space-y-2">${setsRowsHtml}</div>
+
+                    <div class="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-200 dark:border-borderDark/70 flex-wrap">
+                      <div class="flex items-center gap-2">
+                        <button data-add-set="${ex.id}" class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1 transition">
+                          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                          <span>إضافة جولة</span>
+                        </button>
+                        ${sets.length > 1 ? `
+                          <button data-remove-set="${ex.id}" class="px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 hover:bg-rose-500/15 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-rose-500 transition">
+                            حذف الأخيرة
+                          </button>
+                        ` : ''}
+                      </div>
+                      <div class="text-xs font-bold text-slate-500 dark:text-slate-400 tabular-nums">
+                        المنجز: <span class="text-emerald-600 dark:text-emerald-400">${exDoneCount}/${sets.length}</span> • الحجم: <span class="text-slate-900 dark:text-white">${Math.round(exVol).toLocaleString('en-US')}</span> كجم
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              `;
+            }).join('');
+
+        container.innerHTML = `
+          <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-3 mb-4">${dayPillsHtml}</div>
+
+          <!-- Workout Day Header -->
+          <div class="app-card rounded-3xl border p-4 sm:p-5 mb-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <div class="text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-0.5">${dayMeta.ar} ${dayObj.dayId === todayId ? '• اليوم' : ''}</div>
+                <h2 class="text-xl font-black text-slate-900 dark:text-white">${escapeHtml(dayObj.title)}</h2>
+              </div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <button id="btn-edit-this-day" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition">
+                  <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
+                  <span>تخصيص اليوم</span>
+                </button>
+                <button id="btn-add-exercise" class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white dark:text-slate-950 text-xs font-extrabold flex items-center gap-1.5 shadow-md shadow-emerald-500/20 active:scale-95 transition">
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                  <span>إضافة تمرين جديد</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2.5 app-subtle border rounded-2xl p-3">
+              <div class="text-center">
+                <div class="text-[11px] text-slate-500 dark:text-slate-400">الجولات المنجزة</div>
+                <div class="text-lg font-black text-emerald-600 dark:text-emerald-400 tabular-nums">${liveDoneSets} / ${liveTotalSets}</div>
+              </div>
+              <div class="text-center border-x border-slate-200 dark:border-borderDark/80">
+                <div class="text-[11px] text-slate-500 dark:text-slate-400">الحجم التدريبي (Volume)</div>
+                <div class="text-lg font-black text-slate-900 dark:text-white tabular-nums">${Math.round(liveTotalVolume).toLocaleString('en-US')} <span class="text-xs font-normal text-slate-400">كجم</span></div>
+              </div>
+              <div class="text-center">
+                <div class="text-[11px] text-slate-500 dark:text-slate-400">أرقام قياسية اليوم</div>
+                <div class="text-lg font-black text-amber-500 dark:text-amber-400 tabular-nums">${livePRCount} 🏆</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Warm-up Section (Before Lifting) -->
+          ${warmupsHtml}
+
+          <!-- Main Weightlifting Section Header -->
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <i data-lucide="dumbbell" class="w-5 h-5 text-emerald-500"></i>
+              <span>ثانياً: تمارين الحديد والمقاومة</span>
+            </h3>
+          </div>
+
+          <div class="space-y-4 mb-6">${exercisesHtml}</div>
+
+          ${dayObj.exercises.length > 0 ? `
+            <div class="app-card rounded-2xl border border-emerald-500/40 p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div>
+                <div class="text-sm font-extrabold text-slate-900 dark:text-white">أنهيت تمرينك اليوم؟</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">احفظ الجلسة في السجل لحساب التطور وتحديث الرسوم البيانية.</div>
+              </div>
+              <div class="flex items-center gap-2 w-full sm:w-auto">
+                <button id="btn-reset-draft" class="px-3.5 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 transition">تصفير الجولات</button>
+                <button id="btn-finish-session" class="flex-1 sm:flex-none px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white dark:text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 active:scale-95 transition">
+                  <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                  <span>إنهاء وحفظ الجلسة</span>
+                </button>
+              </div>
+            </div>
+          ` : ''}
+        `;
+
+        bindWorkoutDayPills(container);
+
+        // Warm-up Handlers
+        const btnAddWu = document.getElementById('btn-add-warmup');
+        if (btnAddWu) btnAddWu.addEventListener('click', () => openWarmupModal(dayObj.dayId));
+
+        container.querySelectorAll('[data-toggle-warmup]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const wId = btn.dataset.toggleWarmup;
+            dayDraft.warmupsDone[wId] = !dayDraft.warmupsDone[wId];
+            saveState();
+            renderWorkoutView();
+          });
+        });
+
+        container.querySelectorAll('[data-start-wu-timer]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const mins = Math.max(1, Number(btn.dataset.startWuTimer) || 5);
+            const wuName = btn.dataset.wuName || 'الإحماء';
+            startRestTimer(mins * 60, `مؤقت الإحماء: ${wuName}`);
+          });
+        });
+
+        container.querySelectorAll('[data-delete-warmup]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const wId = btn.dataset.deleteWarmup;
+            dayObj.warmups = dayObj.warmups.filter(w => w.id !== wId);
+            delete dayDraft.warmupsDone[wId];
+            saveState();
+            renderWorkoutView();
+            showToast('تم حذف فقرة الإحماء', 'info');
+          });
+        });
+
+        // Day & Exercise Handlers
+        const btnEditDay = document.getElementById('btn-edit-this-day');
+        if (btnEditDay) btnEditDay.addEventListener('click', () => openEditDayModal(dayObj.dayId));
+
+        const btnAddEx = document.getElementById('btn-add-exercise');
+        if (btnAddEx) btnAddEx.addEventListener('click', () => openExerciseModal(dayObj.dayId, null));
+
+        const btnEmptyAdd = document.getElementById('btn-empty-add-ex');
+        if (btnEmptyAdd) btnEmptyAdd.addEventListener('click', () => openExerciseModal(dayObj.dayId, null));
+
+        container.querySelectorAll('[data-set-input]').forEach(inp => {
+          inp.addEventListener('input', () => {
+            const field = inp.dataset.setInput;
+            const exId = inp.dataset.exId;
+            const sIdx = Number(inp.dataset.setIdx);
+            const val = inp.value === '' ? '' : Number(inp.value);
+            if (state.drafts[dayObj.dayId] && state.drafts[dayObj.dayId][exId]) {
+              state.drafts[dayObj.dayId][exId].sets[sIdx][field] = val;
+              saveState();
+            }
+          });
+        });
+
+        container.querySelectorAll('[data-toggle-set]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const exId = btn.dataset.toggleSet;
+            const sIdx = Number(btn.dataset.setIdx);
+            const exObj = dayObj.exercises.find(e => e.id === exId);
+            const setObj = state.drafts[dayObj.dayId][exId].sets[sIdx];
+
+            if (!setObj.done) {
+              const w = Number(setObj.w) || 0;
+              const r = Number(setObj.r) || 0;
+              if (r <= 0) {
+                showToast('أدخل عدد التكرارات أولاً لإتمام الجولة', 'error');
+                return;
+              }
+              setObj.done = true;
+
+              const prevPR = getExercisePR(exId).maxWeight;
+              const otherTodayMax = state.drafts[dayObj.dayId][exId].sets
+                .filter((_, idx) => idx !== sIdx && _.done)
+                .reduce((m, s) => Math.max(m, Number(s.w) || 0), 0);
+
+              if (w > 0 && prevPR > 0 && w > Math.max(prevPR, otherTodayMax)) {
+                setObj.isPR = true;
+                celebratePR(exObj ? exObj.name : '', w);
+              } else {
+                setObj.isPR = false;
+              }
+
+              if (state.settings.autoStartTimer) {
+                startRestTimer(state.settings.defaultRestSec || 90, 'مؤقت الراحة الذكي (Rest Timer)');
+              }
+            } else {
+              setObj.done = false;
+              setObj.isPR = false;
+            }
+            saveState();
+            renderWorkoutView();
+          });
+        });
+
+        container.querySelectorAll('[data-add-set]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const exId = btn.dataset.addSet;
+            const setsArr = state.drafts[dayObj.dayId][exId].sets;
+            const last = setsArr[setsArr.length - 1] || { w: '', r: 10 };
+            setsArr.push({ w: last.w, r: last.r, done: false, isPR: false });
+            saveState();
+            renderWorkoutView();
+          });
+        });
+
+        container.querySelectorAll('[data-remove-set]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const exId = btn.dataset.removeSet;
+            const setsArr = state.drafts[dayObj.dayId][exId].sets;
+            if (setsArr.length > 1) {
+              setsArr.pop();
+              saveState();
+              renderWorkoutView();
+            }
+          });
+        });
+
+        container.querySelectorAll('[data-edit-ex]').forEach(btn => {
+          btn.addEventListener('click', () => openExerciseModal(dayObj.dayId, btn.dataset.editEx));
+        });
+
+        container.querySelectorAll('[data-delete-ex]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const exId = btn.dataset.deleteEx;
+            const exObj = dayObj.exercises.find(e => e.id === exId);
+            openConfirmModal(
+              'حذف التمرين',
+              `هل تريد حذف تمرين "${exObj ? exObj.name : ''}" من هذا اليوم؟`,
+              () => {
+                dayObj.exercises = dayObj.exercises.filter(e => e.id !== exId);
+                if (state.drafts[dayObj.dayId]) delete state.drafts[dayObj.dayId][exId];
+                saveState();
+                renderWorkoutView();
+                showToast('تم حذف التمرين من اليوم', 'info');
+              }
+            );
+          });
+        });
+
+        container.querySelectorAll('[data-move-ex]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const dir = btn.dataset.moveEx;
+            const idx = Number(btn.dataset.exIdx);
+            const target = dir === 'up' ? idx - 1 : idx + 1;
+            if (target >= 0 && target < dayObj.exercises.length) {
+              const tmp = dayObj.exercises[idx];
+              dayObj.exercises[idx] = dayObj.exercises[target];
+              dayObj.exercises[target] = tmp;
+              saveState();
+              renderWorkoutView();
+            }
+          });
+        });
+
+        const btnReset = document.getElementById('btn-reset-draft');
+        if (btnReset) {
+          btnReset.addEventListener('click', () => {
+            openConfirmModal('تصفير الجولات الحالية', 'سيتم إلغاء تحديد جميع فقرات الإحماء والجولات المنجزة في هذه الجلسة الحالية.', () => {
+              delete state.drafts[dayObj.dayId];
+              saveState();
+              renderWorkoutView();
+              showToast('تم تصفير جولات اليوم', 'info');
+            });
+          });
+        }
+
+        const btnFinish = document.getElementById('btn-finish-session');
+        if (btnFinish) {
+          btnFinish.addEventListener('click', () => finishWorkoutSession(dayObj));
+        }
+
+        refreshIcons();
+      }
+
+      function bindWorkoutDayPills(container) {
+        container.querySelectorAll('[data-select-day]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            selectedDayId = btn.dataset.selectDay;
+            renderWorkoutView();
+          });
+        });
+      }
+
+      function finishWorkoutSession(dayObj) {
+        const dayDraft = state.drafts[dayObj.dayId] || {};
+        const entries = [];
+        let totalVolume = 0;
+        let prsCount = 0;
+
+        for (const ex of dayObj.exercises) {
+          const dEx = dayDraft[ex.id];
+          if (!dEx || !Array.isArray(dEx.sets)) continue;
+          const completedSets = dEx.sets
+            .filter(s => s.done && (Number(s.r) || 0) > 0)
+            .map(s => ({ w: Number(s.w) || 0, r: Number(s.r) || 0 }));
+
+          if (completedSets.length > 0) {
+            const prevPR = getExercisePR(ex.id).maxWeight;
+            const sessionMax = Math.max(...completedSets.map(s => s.w));
+            if (prevPR > 0 && sessionMax > prevPR) prsCount++;
+            for (const s of completedSets) totalVolume += s.w * s.r;
+            entries.push({ exerciseId: ex.id, name: ex.name, muscle: ex.muscle, sets: completedSets });
+          }
+        }
+
+        if (entries.length === 0) {
+          showToast('أكمل جولة واحدة على الأقل (✓) قبل حفظ الجلسة', 'error');
+          return;
+        }
+
+        const warmupsCompleted = (dayObj.warmups || [])
+          .filter(w => dayDraft.warmupsDone && dayDraft.warmupsDone[w.id])
+          .map(w => w.name);
+
+        const newSession = {
+          id: 'sess_' + Date.now(),
+          date: new Date().toISOString().slice(0, 10),
+          dayId: dayObj.dayId,
+          dayTitle: dayObj.title,
+          totalVolume: Math.round(totalVolume),
+          prsCount,
+          warmupsCompleted,
+          entries
+        };
+
+        state.history.push(newSession);
+        delete state.drafts[dayObj.dayId];
+        saveState();
+
+        showToast(`تم حفظ الجلسة! إجمالي الحجم: ${newSession.totalVolume.toLocaleString('en-US')} كجم`, 'success');
+        if (prsCount > 0 && typeof window.confetti === 'function') {
+          try { window.confetti({ particleCount: 90, spread: 75, origin: { y: 0.65 } }); } catch (e) {}
+        }
+        selectedProgressExId = entries[0].exerciseId;
+        switchTab('progress');
+      }
+
+      // =========================================================
+      // VIEW 3: PROGRESS TRACKER & ANALYTICS
+      // =========================================================
+      function renderProgressView() {
+        const container = document.getElementById('view-progress');
+        const allExercises = getAllUniqueExercises();
+
+        if (allExercises.length === 0) {
+          container.innerHTML = `<div class="app-card rounded-3xl border p-10 text-center text-slate-500 dark:text-slate-400">أضف تمارين وسجل أول جلسة لك لبدء عرض مقياس التطور والرسوم البيانية.</div>`;
+          return;
+        }
+
+        if (!allExercises.some(e => e.id === selectedProgressExId)) {
+          selectedProgressExId = allExercises[0].id;
+        }
+
+        const activeEx = allExercises.find(e => e.id === selectedProgressExId);
+        const hist = getExerciseHistory(activeEx.id);
+        const mm = MUSCLE_META[activeEx.muscle] || MUSCLE_META.chest;
+
+        let firstMax = 0, latestMax = 0, bestMax = 0, strengthPct = 0;
+        let firstVol = 0, latestVol = 0, volPct = 0;
+        if (hist.length > 0) {
+          firstMax = hist[0].maxWeight;
+          latestMax = hist[hist.length - 1].maxWeight;
+          bestMax = Math.max(...hist.map(h => h.maxWeight));
+          if (firstMax > 0) strengthPct = Math.round(((latestMax - firstMax) / firstMax) * 100);
+
+          firstVol = hist[0].volume;
+          latestVol = hist[hist.length - 1].volume;
+          if (firstVol > 0) volPct = Math.round(((latestVol - firstVol) / firstVol) * 100);
+        }
+
+        let motivationMsg = 'سجّل أول جلسة لك من تبويب "التمرين" ليبدأ حساب تطورك تلقائياً.';
+        if (hist.length === 1) {
+          motivationMsg = `بداية رائعة! سجلت ${latestMax} كجم في أول جلسة — عند تسجيل الجلسة الثانية سيظهر منحنى التطور ونسبة الزيادة.`;
+        } else if (hist.length >= 2) {
+          if (strengthPct > 0) {
+            motivationMsg = `ممتاز! تطورت قوتك بنسبة +${strengthPct}% في تمرين "${activeEx.name}" (من ${firstMax} كجم إلى ${latestMax} كجم).`;
+          } else if (volPct > 0) {
+            motivationMsg = `تقدم رائع في الحجم التدريبي بنسبة +${volPct}%! حتى مع ثبات الوزن، جهدك العضلي ارتفع بوضوح.`;
+          } else {
+            motivationMsg = `ثبات جيد عند ${latestMax} كجم — جرّب زيادة +2.5 كجم أو تكرار إضافي في الجلسة القادمة.`;
+          }
+        }
+
+        const prList = allExercises
+          .map(e => {
+            const h = getExerciseHistory(e.id);
+            const pr = h.length ? Math.max(...h.map(x => x.maxWeight)) : 0;
+            const growth = (h.length >= 2 && h[0].maxWeight > 0)
+              ? Math.round(((h[h.length - 1].maxWeight - h[0].maxWeight) / h[0].maxWeight) * 100)
+              : null;
+            return { ...e, pr, sessions: h.length, growth };
+          })
+          .filter(e => e.pr > 0)
+          .sort((a, b) => b.pr - a.pr);
+
+        container.innerHTML = `
+          <section class="app-card rounded-3xl border p-5 mb-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 class="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <i data-lucide="trending-up" class="w-5 h-5 text-emerald-500"></i>
+                  <span>مقياس التطور والإحصائيات</span>
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">اختر أي تمرين لاستعراض منحنى الأوزان والحجم التدريبي</p>
+              </div>
+              <select id="progress-ex-select" class="app-input w-full sm:w-72 h-11 px-3 rounded-xl border focus:border-emerald-500 text-sm font-bold outline-none">
+                ${allExercises.map(e => `<option value="${e.id}" ${e.id === activeEx.id ? 'selected' : ''}>${escapeHtml(e.name)}</option>`).join('')}
+              </select>
+            </div>
+
+            <div class="rounded-2xl bg-emerald-500/10 border border-emerald-500/30 p-3.5 flex items-start gap-3 mb-4">
+              <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border ${mm.bg} ${mm.text} ${mm.border}">${mm.label}</span>
+                  <span class="text-xs font-extrabold text-emerald-700 dark:text-emerald-300">تحليل الأداء التلقائي</span>
+                </div>
+                <p class="text-sm font-bold text-slate-900 dark:text-white leading-snug">${escapeHtml(motivationMsg)}</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div class="app-subtle rounded-2xl border p-3">
+                <div class="text-[11px] text-slate-500 dark:text-slate-400 mb-1">أعلى وزن (PR)</div>
+                <div class="text-xl font-black text-amber-500 dark:text-amber-400 tabular-nums">${bestMax} <span class="text-xs font-normal text-slate-400">كجم</span></div>
+              </div>
+              <div class="app-subtle rounded-2xl border p-3">
+                <div class="text-[11px] text-slate-500 dark:text-slate-400 mb-1">تطور القوة</div>
+                <div class="text-xl font-black tabular-nums ${strengthPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}">${strengthPct > 0 ? '+' : ''}${strengthPct}%</div>
+              </div>
+              <div class="app-subtle rounded-2xl border p-3">
+                <div class="text-[11px] text-slate-500 dark:text-slate-400 mb-1">آخر حجم تدريبي</div>
+                <div class="text-xl font-black text-sky-600 dark:text-sky-400 tabular-nums">${latestVol.toLocaleString('en-US')} <span class="text-xs font-normal text-slate-400">كجم</span></div>
+              </div>
+              <div class="app-subtle rounded-2xl border p-3">
+                <div class="text-[11px] text-slate-500 dark:text-slate-400 mb-1">عدد الجلسات</div>
+                <div class="text-xl font-black text-slate-900 dark:text-white tabular-nums">${hist.length}</div>
+              </div>
+            </div>
+          </section>
+
+          ${hist.length > 0 ? `
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+              <div class="app-card rounded-2xl border p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">منحنى تطور الأوزان (أعلى وزن بالكجم)</h3>
+                  <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">Max Weight</span>
+                </div>
+                <div class="relative h-64"><canvas id="chart-weight"></canvas></div>
+              </div>
+
+              <div class="app-card rounded-2xl border p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="text-sm font-extrabold text-slate-900 dark:text-white">تطور الحجم التدريبي (الوزن × التكرارات)</h3>
+                  <span class="text-[11px] text-sky-600 dark:text-sky-400 font-bold">Total Volume</span>
+                </div>
+                <div class="relative h-64"><canvas id="chart-volume"></canvas></div>
+              </div>
+            </div>
+          ` : `
+            <div class="app-card rounded-2xl border p-8 text-center text-sm text-slate-500 dark:text-slate-400 mb-6">
+              لا توجد جلسات مسجلة لهذا التمرين بعد. ابدأ تمرينك الأول من تبويب "التمرين" ليظهر الرسم البياني تلقائياً.
+            </div>
+          `}
+
+          <section class="app-card rounded-2xl border p-4 sm:p-5">
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2 mb-4">
+              <i data-lucide="trophy" class="w-5 h-5 text-amber-500"></i>
+              <span>جدار الأرقام القياسية (Personal Records)</span>
+            </h3>
+            ${prList.length === 0 ? '<p class="text-xs text-slate-500 dark:text-slate-400">ستظهر أرقامك القياسية هنا فور حفظ أول جلسة تمرين.</p>' : `
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                ${prList.map(item => {
+                  const im = MUSCLE_META[item.muscle] || MUSCLE_META.chest;
+                  return `
+                    <button data-pick-pr="${item.id}" class="app-subtle text-right p-3.5 rounded-xl border hover:border-amber-500/50 flex items-center justify-between gap-3 transition">
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-1.5 mb-1">
+                          <span class="w-2 h-2 rounded-full shrink-0" style="background:${im.dot}"></span>
+                          <span class="text-xs font-extrabold text-slate-900 dark:text-white truncate">${escapeHtml(item.name)}</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">${item.sessions} جلسات ${item.growth !== null ? `• التطور: <span class="${item.growth >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'} font-bold">${item.growth > 0 ? '+' : ''}${item.growth}%</span>` : ''}</div>
+                      </div>
+                      <div class="px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 font-black text-sm tabular-nums shrink-0">
+                        ${item.pr} كجم
+                      </div>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            `}
+          </section>
+        `;
+
+        const sel = document.getElementById('progress-ex-select');
+        if (sel) {
+          sel.addEventListener('change', () => {
+            selectedProgressExId = sel.value;
+            renderProgressView();
+          });
+        }
+
+        container.querySelectorAll('[data-pick-pr]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            selectedProgressExId = btn.dataset.pickPr;
+            renderProgressView();
+          });
+        });
+
+        refreshIcons();
+        if (hist.length > 0 && window.Chart) renderProgressCharts(hist);
+      }
+
+      function renderProgressCharts(hist) {
+        if (weightChartInstance) { weightChartInstance.destroy(); weightChartInstance = null; }
+        if (volumeChartInstance) { volumeChartInstance.destroy(); volumeChartInstance = null; }
+
+        const isDark = state.settings.theme !== 'light';
+        const gridColor = isDark ? 'rgba(148, 163, 184, 0.10)' : 'rgba(15, 23, 42, 0.08)';
+        const tickColor = isDark ? '#94A3B8' : '#475569';
+
+        const labels = hist.map(h => formatDateAr(h.date));
+        const weights = hist.map(h => h.maxWeight);
+        const volumes = hist.map(h => h.volume);
+
+        const commonOptions = {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              rtl: true,
+              backgroundColor: isDark ? '#0F172A' : '#1E293B',
+              titleFont: { family: 'Tajawal', size: 12, weight: 'bold' },
+              bodyFont: { family: 'Inter', size: 13, weight: 'bold' }
+            }
+          },
+          scales: {
+            x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { family: 'Tajawal', size: 11 } } },
+            y: { beginAtZero: false, grid: { color: gridColor }, ticks: { color: tickColor, font: { family: 'Inter', size: 11 } } }
+          }
+        };
+
+        const wCanvas = document.getElementById('chart-weight');
+        if (wCanvas) {
+          weightChartInstance = new Chart(wCanvas.getContext('2d'), {
+            type: 'line',
+            data: {
+              labels,
+              datasets: [{
+                label: 'أعلى وزن (كجم)',
+                data: weights,
+                borderColor: '#10B981',
+                backgroundColor: 'rgba(16, 185, 129, 0.16)',
+                borderWidth: 3,
+                pointBackgroundColor: '#10B981',
+                pointBorderColor: isDark ? '#090B10' : '#FFFFFF',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                fill: true,
+                tension: 0.35
+              }]
+            },
+            options: commonOptions
+          });
+        }
+
+        const vCanvas = document.getElementById('chart-volume');
+        if (vCanvas) {
+          volumeChartInstance = new Chart(vCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [{
+                label: 'الحجم التدريبي (كجم)',
+                data: volumes,
+                backgroundColor: 'rgba(14, 165, 233, 0.72)',
+                borderColor: '#0EA5E9',
+                borderWidth: 1.5,
+                borderRadius: 8
+              }]
+            },
+            options: {
+              ...commonOptions,
+              scales: { ...commonOptions.scales, y: { ...commonOptions.scales.y, beginAtZero: true } }
+            }
+          });
+        }
+      }
+
+      // =========================================================
+      // VIEW 4: HISTORY LOG & JSON/CSV BACKUP
+      // =========================================================
+      function renderDataView() {
+        const container = document.getElementById('view-data');
+        const sortedHistory = [...state.history].sort((a, b) => b.date.localeCompare(a.date));
+
+        container.innerHTML = `
+          <section class="app-card rounded-3xl border p-5 mb-5">
+            <h2 class="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2 mb-1">
+              <i data-lucide="hard-drive-download" class="w-5 h-5 text-emerald-500"></i>
+              <span>النسخ الاحتياطي وإدارة البيانات</span>
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">بياناتك محفوظة تلقائياً في جهازك (LocalStorage). يمكنك تصدير نسخة احتياطية أو إعادة اختيار النظام التدريبي في أي وقت.</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4">
+              <button id="btn-export-json" class="p-3.5 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-700 dark:text-emerald-300 font-extrabold text-xs flex items-center justify-center gap-2 transition active:scale-95">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>تصدير نسخة كاملة (JSON)</span>
+              </button>
+              <button id="btn-export-csv" class="p-3.5 rounded-2xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/35 text-sky-700 dark:text-sky-300 font-extrabold text-xs flex items-center justify-center gap-2 transition active:scale-95">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                <span>تصدير سجل الأوزان (CSV)</span>
+              </button>
+              <button id="btn-import-json" class="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-borderDark text-slate-700 dark:text-slate-200 font-extrabold text-xs flex items-center justify-center gap-2 transition active:scale-95">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                <span>استيراد نسخة (JSON)</span>
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-200 dark:border-borderDark/70 flex-wrap">
+              <div class="flex items-center gap-3">
+                <label class="text-xs font-bold text-slate-600 dark:text-slate-300">مدة الراحة الافتراضية:</label>
+                <select id="setting-default-rest" class="app-input h-9 px-2.5 rounded-xl border text-xs font-bold tabular-nums">
+                  <option value="60" ${state.settings.defaultRestSec === 60 ? 'selected' : ''}>60 ثانية</option>
+                  <option value="90" ${state.settings.defaultRestSec === 90 ? 'selected' : ''}>90 ثانية</option>
+                  <option value="120" ${state.settings.defaultRestSec === 120 ? 'selected' : ''}>120 ثانية</option>
+                  <option value="180" ${state.settings.defaultRestSec === 180 ? 'selected' : ''}>180 ثانية</option>
+                </select>
+              </div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <button id="btn-reopen-onboarding" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition">
+                  إعادة اختيار النظام التدريبي
+                </button>
+                <button id="btn-factory-reset" class="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-xs font-bold transition">
+                  تصفير التطبيق بالكامل
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="app-card rounded-3xl border p-5">
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2 mb-4">
+              <i data-lucide="history" class="w-5 h-5 text-sky-500"></i>
+              <span>سجل الجلسات السابقة (${sortedHistory.length})</span>
+            </h3>
+
+            ${sortedHistory.length === 0 ? `
+              <div class="text-center py-8 text-sm text-slate-500 dark:text-slate-400">السجل فارغ حالياً — ستظهر جلساتك هنا فور إنهاء أول تمرين.</div>
+            ` : `
+              <div class="space-y-3">
+                ${sortedHistory.map(sess => `
+                  <div class="app-subtle rounded-2xl border p-4">
+                    <div class="flex items-start justify-between gap-2 mb-3">
+                      <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                          <span class="text-sm font-extrabold text-slate-900 dark:text-white">${escapeHtml(sess.dayTitle)}</span>
+                          ${sess.prsCount > 0 ? `<span class="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[10px] font-bold">🏆 ${sess.prsCount} PR</span>` : ''}
+                          ${sess.warmupsCompleted && sess.warmupsCompleted.length > 0 ? `<span class="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[10px] font-bold">🔥 ${sess.warmupsCompleted.length} إحماء</span>` : ''}
+                        </div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">${formatDateAr(sess.date)} • إجمالي الحجم: <span class="text-sky-600 dark:text-sky-400 font-bold">${(Number(sess.totalVolume) || 0).toLocaleString('en-US')} كجم</span></div>
+                      </div>
+                      <button data-delete-sess="${sess.id}" title="حذف الجلسة" class="w-8 h-8 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 dark:text-rose-400 flex items-center justify-center transition">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                      </button>
+                    </div>
+                    <div class="space-y-1.5">
+                      ${(sess.entries || []).map(e => `
+                        <div class="flex items-center justify-between gap-2 text-xs app-card border rounded-xl px-3 py-2">
+                          <span class="font-bold text-slate-800 dark:text-slate-200 truncate">${escapeHtml(e.name)}</span>
+                          <span class="text-slate-500 dark:text-slate-400 tabular-nums shrink-0">${(e.sets || []).map(s => `${s.w}×${s.r}`).join(' | ')}</span>
+                        </div>
+                      `).join('')}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </section>
+        `;
+
+        document.getElementById('btn-export-json').addEventListener('click', exportJSON);
+        document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
+        document.getElementById('btn-import-json').addEventListener('click', () => {
+          document.getElementById('json-import-input').click();
+        });
+
+        document.getElementById('setting-default-rest').addEventListener('change', (e) => {
+          state.settings.defaultRestSec = Number(e.target.value) || 90;
+          saveState();
+          showToast(`تم ضبط الراحة الافتراضية على ${state.settings.defaultRestSec} ثانية`, 'success');
+        });
+
+        document.getElementById('btn-reopen-onboarding').addEventListener('click', () => {
+          pendingSplitId = state.selectedSplit || 'ppl';
+          pendingCardioId = state.preferredCardio || 'treadmill';
+          switchTab('onboarding');
+        });
+
+        document.getElementById('btn-factory-reset').addEventListener('click', () => {
+          openConfirmModal('تصفير التطبيق بالكامل', 'سيتم مسح جميع الجلسات والبيانات والعودة لشاشة اختيار النظام التدريبي من الصفر. هل أنت متأكد؟', () => {
+            const currentTheme = state.settings.theme;
+            state = createFreshState();
+            state.settings.theme = currentTheme;
+            saveState();
+            showToast('تم تصفير التطبيق بنجاح', 'info');
+            switchTab('onboarding');
+          });
+        });
+
+        container.querySelectorAll('[data-delete-sess]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const sid = btn.dataset.deleteSess;
+            openConfirmModal('حذف الجلسة', 'هل تريد حذف هذه الجلسة من السجل؟', () => {
+              state.history = state.history.filter(s => s.id !== sid);
+              saveState();
+              renderDataView();
+              showToast('تم حذف الجلسة', 'info');
+            });
+          });
+        });
+
+        refreshIcons();
+      }
+
+      function downloadFile(filename, content, mimeType) {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
+      function exportJSON() {
+        const dateTag = new Date().toISOString().slice(0, 10);
+        downloadFile(`quwwa_gym_backup_${dateTag}.json`, JSON.stringify(state, null, 2), 'application/json');
+        showToast('تم تصدير النسخة الاحتياطية (JSON)', 'success');
+      }
+
+      function exportCSV() {
+        const rows = [['التاريخ', 'اليوم', 'التمرين', 'العضلة', 'الجولة', 'الوزن (كجم)', 'التكرارات', 'الحجم (كجم)']];
+        for (const sess of state.history) {
+          for (const entry of sess.entries || []) {
+            const mm = MUSCLE_META[entry.muscle] ? MUSCLE_META[entry.muscle].label : entry.muscle;
+            (entry.sets || []).forEach((s, idx) => {
+              rows.push([
+                sess.date,
+                `"${String(sess.dayTitle || '').replace(/"/g, '""')}"`,
+                `"${String(entry.name || '').replace(/"/g, '""')}"`,
+                mm,
+                idx + 1,
+                s.w,
+                s.r,
+                Math.round((Number(s.w) || 0) * (Number(s.r) || 0))
+              ]);
+            });
+          }
+        }
+        const csvStr = '\uFEFF' + rows.map(r => r.join(',')).join('\n');
+        const dateTag = new Date().toISOString().slice(0, 10);
+        downloadFile(`quwwa_gym_log_${dateTag}.csv`, csvStr, 'text/csv;charset=utf-8;');
+        showToast('تم تصدير سجل الأوزان (CSV)', 'success');
+      }
+
+      document.getElementById('json-import-input').addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const imported = JSON.parse(reader.result);
+            if (!imported || !Array.isArray(imported.schedule) || imported.schedule.length !== 7) {
+              showToast('ملف النسخة الاحتياطية غير صالح', 'error');
+              return;
+            }
+            state = imported;
+            if (!state.settings) state.settings = { theme: 'dark', defaultRestSec: 90, autoStartTimer: true, soundEnabled: true };
+            if (!Array.isArray(state.history)) state.history = [];
+            if (!state.drafts) state.drafts = {};
+            state.schedule.forEach(d => { if (!Array.isArray(d.warmups)) d.warmups = []; });
+            state.setupCompleted = true;
+            saveState();
+            applyTheme();
+            showToast('تم استيراد النسخة الاحتياطية بنجاح!', 'success');
+            switchTab('schedule');
+          } catch (err) {
+            showToast('تعذّر قراءة ملف JSON', 'error');
+          }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+      });
+
+      // =========================================================
+      // MODALS (Warm-up / Edit Day / Add-Edit Exercise / Confirm)
+      // =========================================================
+      const modalOverlay = document.getElementById('modal-overlay');
+      const modalTitle = document.getElementById('modal-title');
+      const modalBody = document.getElementById('modal-body');
+
+      function openModal(title, htmlContent) {
+        modalTitle.textContent = title;
+        modalBody.innerHTML = htmlContent;
+        modalOverlay.classList.remove('hidden');
+        refreshIcons();
+      }
+
+      function closeModal() {
+        modalOverlay.classList.add('hidden');
+        modalBody.innerHTML = '';
+      }
+
+      document.getElementById('modal-close').addEventListener('click', closeModal);
+      modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+
+      function openConfirmModal(title, message, onConfirm) {
+        openModal(title, `
+          <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-5">${escapeHtml(message)}</p>
+          <div class="flex items-center justify-end gap-2">
+            <button id="confirm-cancel" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 transition">إلغاء</button>
+            <button id="confirm-ok" class="px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-white text-xs font-extrabold transition">تأكيد</button>
+          </div>
+        `);
+        document.getElementById('confirm-cancel').addEventListener('click', closeModal);
+        document.getElementById('confirm-ok').addEventListener('click', () => { closeModal(); onConfirm(); });
+      }
+
+      function openWarmupModal(dayId) {
+        const dayObj = state.schedule.find(d => d.dayId === dayId);
+        if (!dayObj) return;
+
+        openModal('إضافة تمرين إحماء وتسخين', `
+          <div class="mb-4">
+            <div class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">إضافة سريعة من الجاهز:</div>
+            <div class="grid grid-cols-1 gap-1.5">
+              ${WARMUP_PRESETS.map((p, idx) => `
+                <button type="button" data-quick-wu="${idx}" class="app-subtle text-right p-2.5 rounded-xl border hover:border-amber-500 flex items-center justify-between gap-2 transition">
+                  <div class="min-w-0">
+                    <div class="text-xs font-extrabold text-slate-900 dark:text-white truncate">${p.name}</div>
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate">${p.durationMin} دقائق • ${p.details}</div>
+                  </div>
+                  <span class="px-2 py-1 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-300 text-[11px] font-bold shrink-0">+ أضف</span>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <form id="form-custom-wu" class="space-y-3 pt-3 border-t border-slate-200 dark:border-borderDark">
+            <div class="text-xs font-bold text-slate-500 dark:text-slate-400">أو أضف إحماء مخصصاً:</div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">اسم تمرين الإحماء / الجهاز *</label>
+              <input id="wu-name-input" type="text" required placeholder="مثلاً: جهاز التجديف (Rowing) أو نط حبل" class="app-input w-full h-11 px-3 rounded-xl border focus:border-amber-500 text-sm font-bold outline-none" />
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">المدة (دقائق)</label>
+                <input id="wu-min-input" type="number" min="1" max="60" value="5" required class="app-input w-full h-11 px-3 rounded-xl border focus:border-amber-500 text-sm font-bold tabular-nums outline-none" />
+              </div>
+              <div class="col-span-2">
+                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">التفاصيل / السرعة (اختياري)</label>
+                <input id="wu-det-input" type="text" placeholder="مثلاً: سرعة 5.5، ميلان 5%" class="app-input w-full h-11 px-3 rounded-xl border focus:border-amber-500 text-sm outline-none" />
+              </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-1">
+              <button type="button" id="btn-cancel-wu" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300">إلغاء</button>
+              <button type="submit" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-white dark:text-slate-950 text-xs font-black">إضافة للإحماء</button>
+            </div>
+          </form>
+        `);
+
+        document.querySelectorAll('[data-quick-wu]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const preset = WARMUP_PRESETS[Number(btn.dataset.quickWu)];
+            if (preset) {
+              dayObj.warmups.push({
+                id: 'wu_' + Date.now() + '_' + Math.floor(Math.random() * 100),
+                name: preset.name,
+                durationMin: preset.durationMin,
+                details: preset.details
+              });
+              saveState();
+              closeModal();
+              renderWorkoutView();
+              showToast('تمت إضافة فقرة الإحماء', 'success');
+            }
+          });
+        });
+
+        document.getElementById('btn-cancel-wu').addEventListener('click', closeModal);
+        document.getElementById('form-custom-wu').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const name = document.getElementById('wu-name-input').value.trim();
+          const durationMin = Math.max(1, Number(document.getElementById('wu-min-input').value) || 5);
+          const details = document.getElementById('wu-det-input').value.trim();
+          if (!name) return;
+          dayObj.warmups.push({ id: 'wu_' + Date.now(), name, durationMin, details });
+          saveState();
+          closeModal();
+          renderWorkoutView();
+          showToast('تمت إضافة الإحماء المخصص', 'success');
+        });
+      }
+
+      function openEditDayModal(dayId) {
+        const dayObj = state.schedule.find(d => d.dayId === dayId);
+        const dayMeta = DAYS_ORDER.find(d => d.id === dayId);
+        if (!dayObj) return;
+
+        openModal(`تخصيص يوم ${dayMeta.ar}`, `
+          <form id="form-edit-day" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-2">نوع اليوم</label>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="cursor-pointer">
+                  <input type="radio" name="dayType" value="workout" ${dayObj.type === 'workout' ? 'checked' : ''} class="peer sr-only" />
+                  <div class="app-subtle p-3 rounded-xl border text-center text-xs font-extrabold text-slate-600 dark:text-slate-300 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/15 peer-checked:text-emerald-700 dark:peer-checked:text-emerald-300 transition">
+                    🏋️ يوم تمرين
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="dayType" value="rest" ${dayObj.type === 'rest' ? 'checked' : ''} class="peer sr-only" />
+                  <div class="app-subtle p-3 rounded-xl border text-center text-xs font-extrabold text-slate-600 dark:text-slate-300 peer-checked:border-indigo-500 peer-checked:bg-indigo-500/15 peer-checked:text-indigo-700 dark:peer-checked:text-indigo-200 transition">
+                    🌙 يوم راحة (Rest)
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">اسم اليوم / التمرينة</label>
+              <input id="day-title-input" type="text" required value="${escapeHtml(dayObj.title)}" placeholder="مثلاً: Push • صدر وأكتاف" class="app-input w-full h-11 px-3.5 rounded-xl border focus:border-emerald-500 text-sm font-bold outline-none" />
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                ${['Push • دفع', 'Pull • سحب', 'Legs • أرجل', 'صدر فقط', 'ظهر فقط', 'أكتاف وبطن', 'ذراع فقط', 'يوم راحة واستشفاء'].map(preset => `
+                  <button type="button" data-day-preset="${preset}" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[11px] font-bold text-slate-600 dark:text-slate-300 transition">${preset}</button>
+                `).join('')}
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">ملاحظة مختصرة (اختياري)</label>
+              <input id="day-sub-input" type="text" value="${escapeHtml(dayObj.subtitle || '')}" placeholder="مثلاً: تركيز على الصدر العلوي" class="app-input w-full h-11 px-3.5 rounded-xl border focus:border-emerald-500 text-sm outline-none" />
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2">
+              <button type="button" id="btn-cancel-day" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300">إلغاء</button>
+              <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white dark:text-slate-950 text-xs font-black">حفظ التغييرات</button>
+            </div>
+          </form>
+        `);
+
+        document.querySelectorAll('[data-day-preset]').forEach(b => {
+          b.addEventListener('click', () => {
+            document.getElementById('day-title-input').value = b.dataset.dayPreset;
+            const targetVal = b.dataset.dayPreset.includes('راحة') ? 'rest' : 'workout';
+            const radio = document.querySelector(`input[name="dayType"][value="${targetVal}"]`);
+            if (radio) radio.checked = true;
+          });
+        });
+
+        document.getElementById('btn-cancel-day').addEventListener('click', closeModal);
+        document.getElementById('form-edit-day').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const typeVal = document.querySelector('input[name="dayType"]:checked').value;
+          dayObj.type = typeVal;
+          dayObj.title = document.getElementById('day-title-input').value.trim() || (typeVal === 'rest' ? 'يوم راحة واستشفاء' : 'يوم تمرين');
+          dayObj.subtitle = document.getElementById('day-sub-input').value.trim();
+          if (typeVal === 'workout' && (!dayObj.warmups || dayObj.warmups.length === 0)) {
+            dayObj.warmups = buildDefaultWarmups('upper', state.preferredCardio || 'treadmill');
+          }
+          saveState();
+          closeModal();
+          showToast(`تم تحديث يوم ${dayMeta.ar}`, 'success');
+          if (currentTab === 'schedule') renderScheduleView();
+          else if (currentTab === 'workout') renderWorkoutView();
+        });
+      }
+
+      function openExerciseModal(dayId, exerciseId) {
+        const dayObj = state.schedule.find(d => d.dayId === dayId);
+        if (!dayObj) return;
+        const existing = exerciseId ? dayObj.exercises.find(e => e.id === exerciseId) : null;
+        const initMuscle = existing ? existing.muscle : 'chest';
+        const initEquip = existing ? inferEquipment(existing) : 'machine';
+
+        openModal(existing ? 'تعديل التمرين ونوع الجهاز' : 'إضافة تمرين جديد', `
+          <form id="form-exercise" class="space-y-4">
+            <!-- 1. Muscle Group -->
+            <div>
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">1. العضلة المستهدفة</label>
+              <div class="grid grid-cols-3 gap-2">
+                ${Object.entries(MUSCLE_META).map(([key, m]) => `
+                  <label class="cursor-pointer">
+                    <input type="radio" name="exMuscle" value="${key}" ${initMuscle === key ? 'checked' : ''} class="peer sr-only" />
+                    <div class="app-subtle py-2 px-2 rounded-xl border text-center text-xs font-bold text-slate-600 dark:text-slate-300 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/15 peer-checked:text-emerald-700 dark:peer-checked:text-emerald-300 transition">
+                      ${m.label}
+                    </div>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- 2. Equipment Type (Machine / Cable / Barbell / Dumbbell / Bodyweight) -->
+            <div>
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">2. نوع الجهاز / المعدة (اختر ما يناسبك)</label>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                ${Object.entries(EQUIPMENT_META).map(([key, eq]) => `
+                  <label class="cursor-pointer">
+                    <input type="radio" name="exEquipment" value="${key}" ${initEquip === key ? 'checked' : ''} class="peer sr-only" />
+                    <div class="app-subtle py-2 px-2.5 rounded-xl border text-center text-xs font-bold text-slate-600 dark:text-slate-300 peer-checked:border-sky-500 peer-checked:bg-sky-500/15 peer-checked:text-sky-700 dark:peer-checked:text-sky-300 flex items-center justify-center gap-1.5 transition">
+                      <i data-lucide="${eq.icon}" class="w-3.5 h-3.5"></i>
+                      <span>${eq.label}</span>
+                    </div>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- 3. Smart Suggestions Library based on Muscle + Equipment -->
+            <div class="app-subtle rounded-2xl border p-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                  <span>تمارين وأجهزة جاهزة للاختيار السريع:</span>
+                </span>
+                <span id="ex-lib-count" class="text-[11px] font-bold text-slate-400 tabular-nums"></span>
+              </div>
+              <div id="ex-suggestions-list" class="space-y-1.5 max-h-44 overflow-y-auto custom-scroll"></div>
+            </div>
+
+            <!-- 4. Editable Exercise & Machine Fields -->
+            <div>
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">اسم التمرين *</label>
+              <input id="ex-name" type="text" required value="${escapeHtml(existing ? existing.name : '')}" placeholder="اختر من الأعلى أو اكتب اسم التمرين..." class="app-input w-full h-11 px-3.5 rounded-xl border focus:border-emerald-500 text-sm font-bold outline-none" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">اسم الجهاز المستخدم</label>
+              <input id="ex-machine" type="text" value="${escapeHtml(existing ? existing.machine : '')}" placeholder="مثلاً: جهاز دفع الصدر (Chest Press) / كيبل / بار" class="app-input w-full h-11 px-3.5 rounded-xl border focus:border-emerald-500 text-sm outline-none" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">عدد الجولات (Sets)</label>
+                <input id="ex-sets" type="number" min="1" max="15" required value="${existing ? existing.sets : 3}" class="app-input w-full h-11 px-3.5 rounded-xl border focus:border-emerald-500 text-sm font-bold tabular-nums outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">نطاق التكرارات (Reps)</label>
+                <input id="ex-reps" type="text" required value="${escapeHtml(existing ? existing.repRange : '8-12')}" placeholder="8-12" class="app-input w-full h-11 px-3.5 rounded-xl border focus:border-emerald-500 text-sm font-bold tabular-nums outline-none" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5">ملاحظات ونصائح الأداء / إعدادات الجهاز (Form Tips)</label>
+              <textarea id="ex-tips" rows="2" placeholder="مثلاً: ارتفاع المقعد رقم 4، نزول بطيء 3 ثوانٍ..." class="app-input w-full p-3 rounded-xl border focus:border-emerald-500 text-sm outline-none resize-none">${escapeHtml(existing ? existing.tips : '')}</textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2">
+              <button type="button" id="btn-cancel-ex" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300">إلغاء</button>
+              <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white dark:text-slate-950 text-xs font-black">${existing ? 'حفظ التعديل' : 'إضافة التمرين'}</button>
+            </div>
+          </form>
+        `);
+
+        function renderSuggestions() {
+          const mChecked = document.querySelector('input[name="exMuscle"]:checked');
+          const eChecked = document.querySelector('input[name="exEquipment"]:checked');
+          const mKey = mChecked ? mChecked.value : 'chest';
+          const eKey = eChecked ? eChecked.value : 'machine';
+          const items = (EXERCISE_LIBRARY[mKey] && EXERCISE_LIBRARY[mKey][eKey]) || [];
+          const listEl = document.getElementById('ex-suggestions-list');
+          const countEl = document.getElementById('ex-lib-count');
+          if (countEl) countEl.textContent = `${items.length} خيارات`;
+          if (!listEl) return;
+
+          if (items.length === 0) {
+            listEl.innerHTML = '<div class="text-xs text-slate-400 text-center py-2">اكتب اسم التمرين والجهاز بحرية في الحقول بالأسفل.</div>';
+            return;
+          }
+
+          listEl.innerHTML = items.map((item, idx) => `
+            <button type="button" data-pick-preset="${idx}" class="app-card w-full text-right p-2.5 rounded-xl border hover:border-emerald-500 flex items-center justify-between gap-2 transition active:scale-[0.99]">
+              <div class="min-w-0">
+                <div class="text-xs font-extrabold text-slate-900 dark:text-white truncate">${escapeHtml(item.name)}</div>
+                <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate">الجهاز: ${escapeHtml(item.machine)}</div>
+              </div>
+              <span class="px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold shrink-0">اختيار</span>
+            </button>
+          `).join('');
+
+          listEl.querySelectorAll('[data-pick-preset]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const picked = items[Number(btn.dataset.pickPreset)];
+              if (!picked) return;
+              document.getElementById('ex-name').value = picked.name;
+              document.getElementById('ex-machine').value = picked.machine;
+              document.getElementById('ex-tips').value = picked.tips;
+              showToast(`تم اختيار: ${picked.name}`, 'info');
+            });
+          });
+        }
+
+        document.querySelectorAll('input[name="exMuscle"], input[name="exEquipment"]').forEach(r => {
+          r.addEventListener('change', renderSuggestions);
+        });
+        renderSuggestions();
+
+        document.getElementById('btn-cancel-ex').addEventListener('click', closeModal);
+        document.getElementById('form-exercise').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const name = document.getElementById('ex-name').value.trim();
+          const machine = document.getElementById('ex-machine').value.trim();
+          const muscle = document.querySelector('input[name="exMuscle"]:checked').value;
+          const equipment = document.querySelector('input[name="exEquipment"]:checked').value;
+          const sets = Math.max(1, Math.min(15, Number(document.getElementById('ex-sets').value) || 3));
+          const repRange = document.getElementById('ex-reps').value.trim() || '8-12';
+          const tips = document.getElementById('ex-tips').value.trim();
+          if (!name) return;
+
+          if (existing) {
+            existing.name = name;
+            existing.machine = machine;
+            existing.muscle = muscle;
+            existing.equipment = equipment;
+            existing.sets = sets;
+            existing.repRange = repRange;
+            existing.tips = tips;
+            showToast('تم تحديث بيانات التمرين', 'success');
+          } else {
+            dayObj.exercises.push({ id: 'ex_' + Date.now(), name, machine, muscle, equipment, sets, repRange, tips });
+            showToast('تمت إضافة التمرين بنجاح', 'success');
+          }
+          saveState();
+          closeModal();
+          renderWorkoutView();
+        });
+      }
+
+      // =========================================================
+      // SMART REST / WARM-UP TIMER
+      // =========================================================
+      const timerDrawer = document.getElementById('rest-timer-drawer');
+      const timerDisplay = document.getElementById('timer-display');
+      const timerTitleEl = document.getElementById('timer-title-label');
+      const timerBar = document.getElementById('timer-progress-bar');
+      const timerPlayPause = document.getElementById('timer-play-pause');
+      const headerTimerText = document.getElementById('header-timer-text');
+      const timerAutoCheckbox = document.getElementById('timer-auto-checkbox');
+      const timerSoundToggle = document.getElementById('timer-sound-toggle');
+
+      function formatMMSS(sec) {
+        const s = Math.max(0, Math.floor(sec));
+        const m = Math.floor(s / 60);
+        const rem = s % 60;
+        return String(m).padStart(2, '0') + ':' + String(rem).padStart(2, '0');
+      }
+
+      function updateTimerUI() {
+        const formatted = formatMMSS(timerRemainingSec);
+        timerDisplay.textContent = formatted;
+        timerTitleEl.textContent = timerLabel;
+        headerTimerText.textContent = timerRunning ? formatted : 'مؤقت';
+        const pct = timerTotalSec > 0 ? Math.max(0, Math.min(100, (timerRemainingSec / timerTotalSec) * 100)) : 0;
+        timerBar.style.width = pct + '%';
+
+        timerPlayPause.innerHTML = timerRunning
+          ? '<i data-lucide="pause" class="w-3.5 h-3.5"></i><span>إيقاف</span>'
+          : '<i data-lucide="play" class="w-3.5 h-3.5"></i><span>تشغيل</span>';
+
+        timerAutoCheckbox.checked = !!state.settings.autoStartTimer;
+        timerSoundToggle.innerHTML = state.settings.soundEnabled
+          ? '<i data-lucide="volume-2" class="w-4 h-4 text-sky-500"></i>'
+          : '<i data-lucide="volume-x" class="w-4 h-4 text-slate-400"></i>';
+
+        document.querySelectorAll('.timer-preset-btn').forEach(btn => {
+          const val = Number(btn.dataset.preset);
+          btn.className = val === timerTotalSec
+            ? 'timer-preset-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-500 text-white dark:text-slate-950 tabular-nums transition'
+            : 'timer-preset-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 tabular-nums transition';
+        });
+
+        refreshIcons();
+      }
+
+      function stopTimerInterval() {
+        if (timerIntervalId !== null) {
+          clearInterval(timerIntervalId);
+          timerIntervalId = null;
+        }
+        timerRunning = false;
+      }
+
+      function startRestTimer(seconds, customLabel) {
+        stopTimerInterval();
+        if (customLabel) timerLabel = customLabel;
+        if (typeof seconds === 'number' && seconds > 0) {
+          timerTotalSec = seconds;
+          timerRemainingSec = seconds;
+        } else if (timerRemainingSec <= 0) {
+          timerRemainingSec = timerTotalSec;
+        }
+        timerDrawer.classList.remove('hidden');
+        timerRunning = true;
+        updateTimerUI();
+
+        timerIntervalId = setInterval(() => {
+          timerRemainingSec--;
+          if (timerRemainingSec <= 0) {
+            timerRemainingSec = 0;
+            stopTimerInterval();
+            updateTimerUI();
+            playTimerChime();
+            showToast('⏰ انتهى المؤقت! استعد للخطوة التالية', 'info');
+          } else {
+            updateTimerUI();
+          }
+        }, 1000);
+      }
+
+      document.getElementById('btn-open-timer').addEventListener('click', () => {
+        if (timerDrawer.classList.contains('hidden')) {
+          timerDrawer.classList.remove('hidden');
+          if (!timerRunning && timerRemainingSec <= 0) {
+            timerRemainingSec = state.settings.defaultRestSec || 90;
+            timerTotalSec = timerRemainingSec;
+          }
+          updateTimerUI();
+        } else {
+          timerDrawer.classList.add('hidden');
+        }
+      });
+
+      document.getElementById('timer-close-btn').addEventListener('click', () => {
+        stopTimerInterval();
+        timerDrawer.classList.add('hidden');
+        updateTimerUI();
+      });
+
+      timerPlayPause.addEventListener('click', () => {
+        if (timerRunning) { stopTimerInterval(); updateTimerUI(); }
+        else startRestTimer();
+      });
+
+      document.getElementById('timer-minus-15').addEventListener('click', () => {
+        timerRemainingSec = Math.max(5, timerRemainingSec - 15);
+        updateTimerUI();
+      });
+
+      document.getElementById('timer-plus-15').addEventListener('click', () => {
+        timerRemainingSec += 15;
+        if (timerRemainingSec > timerTotalSec) timerTotalSec = timerRemainingSec;
+        updateTimerUI();
+      });
+
+      document.querySelectorAll('.timer-preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const sec = Number(btn.dataset.preset) || 90;
+          state.settings.defaultRestSec = sec;
+          saveState();
+          startRestTimer(sec, 'مؤقت الراحة الذكي (Rest Timer)');
+        });
+      });
+
+      timerAutoCheckbox.addEventListener('change', () => {
+        state.settings.autoStartTimer = timerAutoCheckbox.checked;
+        saveState();
+      });
+
+      timerSoundToggle.addEventListener('click', () => {
+        state.settings.soundEnabled = !state.settings.soundEnabled;
+        saveState();
+        updateTimerUI();
+      });
+
+      document.querySelectorAll('[data-nav]').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.nav));
+      });
+
+      function initApp() {
+        try {
+          const nowStr = new Date().toLocaleDateString('ar-SA', { weekday: 'long', day: 'numeric', month: 'long' });
+          document.getElementById('header-date-label').textContent = nowStr;
+        } catch (e) {
+          document.getElementById('header-date-label').textContent = 'متتبع التمارين الذكي';
+        }
+        applyTheme();
+        updateTimerUI();
+        switchTab(state.setupCompleted ? 'schedule' : 'onboarding');
+      }
+
+      initApp();
+    })();
+  </script>
+</body>
+</html>
